@@ -1,8 +1,13 @@
+import { Layout } from "./components/layout/Layout";
+
 function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-      <h1 className="text-4xl font-bold">Rosa Admin 🌹</h1>
-    </div>
+    <Layout>
+      <h1 className="text-2xl font-bold text-slate-800">
+        Welcome to Rosa Admin
+      </h1>
+      <p className="text-slate-500 mt-2">Your dashboard is ready to go 🚀</p>
+    </Layout>
   );
 }
 

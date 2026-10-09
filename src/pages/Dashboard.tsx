@@ -5,13 +5,14 @@ import { useOrdersStore } from "../features/orders/ordersStore";
 import { StatusDonut } from "../features/charts/StatusDonut";
 import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
-
+import { HeroScene } from "../features/three/HeroScene";
 export function Dashboard() {
   const orders = useOrdersStore((state) => state.orders);
   const stats = calculateStats(orders);
 
   return (
     <div className="space-y-6">
+      <HeroScene />
       <div>
         <h1 className="text-2xl font-bold text-slate-800">
           Dashboard Overview

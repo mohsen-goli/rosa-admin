@@ -1,3 +1,4 @@
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -26,14 +27,21 @@ export function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
-            <a
+            <NavLink
               key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+              to={item.href}
+              end={item.href === "/"}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive
+                    ? "bg-pink-500 text-white"
+                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                }`
+              }
             >
               <Icon size={20} />
               <span>{item.label}</span>
-            </a>
+            </NavLink>
           );
         })}
       </nav>

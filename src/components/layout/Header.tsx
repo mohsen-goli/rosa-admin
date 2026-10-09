@@ -1,8 +1,21 @@
+import { useLocation } from "react-router-dom";
+
+const pageTitles: Record<string, string> = {
+  "/": "Dashboard",
+  "/orders": "Orders",
+  "/products": "Products",
+  "/customers": "Customers",
+  "/settings": "Settings",
+};
+
 export function Header() {
+  const location = useLocation();
+  const title = pageTitles[location.pathname] ?? "Rosa Admin";
+
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
       <div>
-        <h2 className="text-lg font-semibold text-slate-800">Dashboard</h2>
+        <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
         <p className="text-xs text-slate-500">Welcome back, Mohsen</p>
       </div>
 

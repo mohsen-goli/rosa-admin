@@ -1,13 +1,14 @@
 import { ShoppingCart, DollarSign, Users, Package } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import { calculateStats } from "../lib/stats";
-import { mockOrders } from "../data/orders";
+import { useOrdersStore } from "../features/orders/ordersStore";
 import { StatusDonut } from "../features/charts/StatusDonut";
 import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
 
 export function Dashboard() {
-  const stats = calculateStats(mockOrders);
+  const orders = useOrdersStore((state) => state.orders);
+  const stats = calculateStats(orders);
 
   return (
     <div className="space-y-6">

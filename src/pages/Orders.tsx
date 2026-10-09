@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
-import { mockOrders } from "../data/orders";
+import { Search, Plus } from "lucide-react";
+import { useOrdersStore } from "../features/orders/ordersStore";
 import { OrdersTable } from "../features/orders/OrdersTable";
-import type { OrderStatus } from "../types/order";
+import { OrderFormModal } from "../features/orders/OrderFormModal";
+import type { Order, OrderStatus } from "../types/order";
 
 const statusOptions: { value: OrderStatus | "all"; label: string }[] = [
   { value: "all", label: "All Statuses" },
@@ -13,11 +14,20 @@ const statusOptions: { value: OrderStatus | "all"; label: string }[] = [
 ];
 
 export function Orders() {
+  const orders = useOrdersStore((state) => state.orders);
+  const addOrder = useOrdersStore((state) => state.addOrder);
+  const updateOrder = useOrdersStore((state) => state.updateOrder);
+  const deleteOrder = useOrdersStore((state) => state.deleteOrder);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | undefined>(
+    undefined,
+  );
 
   const filteredOrders = useMemo(() => {
-    return mockOrders.filter((order) => {
+    return orders.filter((order) => {
       const matchesSearch =
         order.customerName.toLowerCase().includes(search.toLowerCase()) ||
         order.product.toLowerCase().includes(search.toLowerCase()) ||
@@ -28,15 +38,27 @@ export function Orders() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [orders, search, statusFilter]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Orders</h1>
-        <p className="text-slate-500 mt-1">
-          {filteredOrders.length} of {mockOrders.length} orders
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Orders</h1>
+          <p className="text-slate-500 mt-1">
+            {filteredOrders.length} of {orders.length} orders
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setEditingOrder(undefined);
+            setIsModalOpen(true);
+          }}
+          className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus size={16} />
+          Add Order
+        </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -69,7 +91,27 @@ export function Orders() {
         </select>
       </div>
 
-      <OrdersTable orders={filteredOrders} />
+      <OrdersTable
+        orders={filteredOrders}
+        onDelete={deleteOrder}
+        onEdit={(order) => {
+          setEditingOrder(order);
+          setIsModalOpen(true);
+        }}
+      />
+
+      <OrderFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={(data) => {
+          if (editingOrder) {
+            updateOrder(editingOrder.id, data);
+          } else {
+            addOrder(data);
+          }
+        }}
+        initialOrder={editingOrder}
+      />
     </div>
   );
 }

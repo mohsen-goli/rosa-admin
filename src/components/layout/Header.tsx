@@ -1,10 +1,14 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Moon, Sun, Languages } from "lucide-react";
+import { LogOut, Moon, Sun, Languages, Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../features/auth/authStore";
 import { useThemeStore } from "../../features/theme/themeStore";
 import { useLanguageStore } from "../../features/language/languageStore";
 import type { Language } from "../../features/language/languageStore";
+
+interface HeaderProps {
+  onMenuClick: () => void;
+}
 
 const pageTitleKeys: Record<string, string> = {
   "/": "nav.dashboard",
@@ -14,7 +18,7 @@ const pageTitleKeys: Record<string, string> = {
   "/settings": "nav.settings",
 };
 
-export function Header() {
+export function Header({ onMenuClick }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -39,17 +43,27 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 transition-colors">
-      <div>
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-          {title}
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {t("auth.welcomeBackUser", { email: user?.email ?? "User" })}
-        </p>
+    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 transition-colors gap-2">
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors shrink-0"
+          aria-label="Open menu"
+        >
+          <Menu size={20} />
+        </button>
+
+        <div className="min-w-0">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">
+            {title}
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            {t("auth.welcomeBackUser", { email: user?.email ?? "User" })}
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <button
           onClick={toggleLanguage}
           className="flex items-center gap-1.5 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-xs font-medium"
@@ -71,14 +85,22 @@ export function Header() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors px-2"
+          className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors px-2"
           title={t("auth.logout")}
         >
           <LogOut size={16} />
-          <span className="hidden sm:inline">{t("auth.logout")}</span>
+          <span className="hidden md:inline">{t("auth.logout")}</span>
         </button>
 
-        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-500/20 flex items-center justify-center text-pink-600 dark:text-pink-400 font-bold">
+        <button
+          onClick={handleLogout}
+          className="sm:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"
+          title={t("auth.logout")}
+        >
+          <LogOut size={16} />
+        </button>
+
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-100 dark:bg-pink-500/20 flex items-center justify-center text-pink-600 dark:text-pink-400 font-bold text-sm sm:text-base shrink-0">
           {user?.email?.[0].toUpperCase() ?? "M"}
         </div>
       </div>

@@ -23,28 +23,28 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-start">
+        <table className="w-full text-sm min-w-[800px]">
+          <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
             <tr>
-              <th className="px-6 py-3 font-medium text-start">
+              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
                 {t("orders.table.orderId")}
               </th>
-              <th className="px-6 py-3 font-medium text-start">
+              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
                 {t("orders.table.customer")}
               </th>
-              <th className="px-6 py-3 font-medium text-start">
+              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
                 {t("orders.table.product")}
               </th>
-              <th className="px-6 py-3 font-medium text-start">
+              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
                 {t("orders.table.date")}
               </th>
-              <th className="px-6 py-3 font-medium text-start">
+              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
                 {t("orders.table.amount")}
               </th>
-              <th className="px-6 py-3 font-medium text-start">
+              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
                 {t("orders.table.status")}
               </th>
-              <th className="px-6 py-3 font-medium text-end">
+              <th className="px-4 sm:px-6 py-3 font-medium text-end whitespace-nowrap">
                 {t("orders.table.actions")}
               </th>
             </tr>
@@ -55,30 +55,30 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
                 key={order.id}
                 className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
-                <td className="px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">
+                <td className="px-4 sm:px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                   {order.id}
                 </td>
-                <td className="px-6 py-4">
-                  <div className="font-medium text-slate-800 dark:text-slate-100">
+                <td className="px-4 sm:px-6 py-4">
+                  <div className="font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
                     {order.customerName}
                   </div>
                   <div className="text-xs text-slate-400 dark:text-slate-500">
                     {order.customerEmail}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                <td className="px-4 sm:px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                   {order.product}
                 </td>
-                <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                <td className="px-4 sm:px-6 py-4 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
                   {order.date}
                 </td>
-                <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-100">
+                <td className="px-4 sm:px-6 py-4 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
                   ${order.amount.toLocaleString()}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                   <StatusBadge status={order.status} />
                 </td>
-                <td className="px-6 py-4 text-end">
+                <td className="px-4 sm:px-6 py-4 text-end whitespace-nowrap">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => onEdit(order)}

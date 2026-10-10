@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../features/auth/authStore";
-import { AtomScene } from "../features/three/AtomScene";
+
+const AtomScene = lazy(() =>
+  import("../features/three/AtomScene").then((m) => ({
+    default: m.AtomScene,
+  })),
+);
 
 export function Login() {
   const { t } = useTranslation();
@@ -37,7 +42,9 @@ export function Login() {
   return (
     <div className="min-h-screen flex bg-slate-950">
       <div className="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-slate-950 via-purple-950 to-pink-950">
-        <AtomScene />
+        <Suspense fallback={<div className="w-full h-full bg-slate-950" />}>
+          <AtomScene />
+        </Suspense>
 
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 pointer-events-none">
           <h1 className="text-4xl font-bold text-white">
@@ -61,9 +68,7 @@ export function Login() {
             <Lock className="text-pink-400" size={22} />
           </div>
 
-          <h2 className="text-2xl font-bold text-white">
-            {t("auth.welcomeBackUser", { email: "" }).replace(", ", "")}
-          </h2>
+          <h2 className="text-2xl font-bold text-white">Welcome back</h2>
           <p className="text-slate-400 mt-1 text-sm">
             {t("auth.signInSubtitle")}
           </p>

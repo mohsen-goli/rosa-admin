@@ -1,12 +1,18 @@
+import { lazy, Suspense } from "react";
 import { ShoppingCart, DollarSign, Users, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatCard } from "../components/StatCard";
 import { calculateStats } from "../lib/stats";
 import { useOrdersStore } from "../features/orders/ordersStore";
-import { HeroScene } from "../features/three/HeroScene";
 import { StatusDonut } from "../features/charts/StatusDonut";
 import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
+
+const HeroScene = lazy(() =>
+  import("../features/three/HeroScene").then((m) => ({
+    default: m.HeroScene,
+  })),
+);
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -15,7 +21,13 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <HeroScene />
+      <Suspense
+        fallback={
+          <div className="h-64 lg:h-80 rounded-xl bg-slate-900 animate-pulse" />
+        }
+      >
+        <HeroScene />
+      </Suspense>
 
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">

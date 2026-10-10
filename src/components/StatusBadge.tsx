@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { OrderStatus } from "../types/order";
 
 interface StatusBadgeProps {
@@ -15,19 +16,14 @@ const statusStyles: Record<OrderStatus, string> = {
     "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
 };
 
-const statusLabels: Record<OrderStatus, string> = {
-  delivered: "Delivered",
-  shipped: "Shipped",
-  pending: "Pending",
-  cancelled: "Cancelled",
-};
-
 export function StatusBadge({ status }: StatusBadgeProps) {
+  const { t } = useTranslation();
+
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status]}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${statusStyles[status]}`}
     >
-      {statusLabels[status]}
+      {t(`orders.status.${status}`)}
     </span>
   );
 }

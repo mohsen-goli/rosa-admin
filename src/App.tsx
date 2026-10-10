@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeApplier } from "./components/ThemeApplier";
+import { LanguageApplier } from "./components/LanguageApplier";
 import { Layout } from "./components/layout/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./pages/Login";
@@ -13,6 +14,7 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeApplier />
+      <LanguageApplier />
       <Routes>
         <Route path="/login" element={<Login />} />
 

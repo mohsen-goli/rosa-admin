@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -8,14 +9,16 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: ShoppingCart, label: "Orders", href: "/orders" },
-  { icon: Package, label: "Products", href: "/products" },
-  { icon: Users, label: "Customers", href: "/customers" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: LayoutDashboard, labelKey: "nav.dashboard", href: "/" },
+  { icon: ShoppingCart, labelKey: "nav.orders", href: "/orders" },
+  { icon: Package, labelKey: "nav.products", href: "/products" },
+  { icon: Users, labelKey: "nav.customers", href: "/customers" },
+  { icon: Settings, labelKey: "nav.settings", href: "/settings" },
 ];
 
 export function Sidebar() {
+  const { t } = useTranslation();
+
   return (
     <aside className="w-64 bg-slate-900 dark:bg-slate-950 text-white h-screen flex flex-col transition-colors">
       <div className="p-6 border-b border-slate-800 dark:border-slate-900">
@@ -40,7 +43,7 @@ export function Sidebar() {
               }
             >
               <Icon size={20} />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </NavLink>
           );
         })}

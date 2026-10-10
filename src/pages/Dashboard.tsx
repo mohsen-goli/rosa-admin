@@ -1,4 +1,5 @@
 import { ShoppingCart, DollarSign, Users, Package } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { StatCard } from "../components/StatCard";
 import { calculateStats } from "../lib/stats";
 import { useOrdersStore } from "../features/orders/ordersStore";
@@ -8,6 +9,7 @@ import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const orders = useOrdersStore((state) => state.orders);
   const stats = calculateStats(orders);
 
@@ -17,40 +19,40 @@ export function Dashboard() {
 
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-          Dashboard Overview
+          {t("dashboard.title")}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Here's what's happening with Rosa today.
+          {t("dashboard.subtitle")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Orders"
+          title={t("dashboard.stats.totalOrders")}
           value={stats.totalOrders.toString()}
           icon={ShoppingCart}
-          trend="+12% this month"
+          trend={`+12% ${t("dashboard.stats.thisMonth")}`}
           trendUp
         />
         <StatCard
-          title="Revenue"
+          title={t("dashboard.stats.revenue")}
           value={`$${stats.totalRevenue.toLocaleString()}`}
           icon={DollarSign}
-          trend="+8% this month"
+          trend={`+8% ${t("dashboard.stats.thisMonth")}`}
           trendUp
         />
         <StatCard
-          title="Unique Customers"
+          title={t("dashboard.stats.uniqueCustomers")}
           value={stats.uniqueCustomers.toString()}
           icon={Users}
-          trend="+3 new"
+          trend={t("dashboard.stats.newThisMonth")}
           trendUp
         />
         <StatCard
-          title="Products Sold"
+          title={t("dashboard.stats.productsSold")}
           value={stats.totalProducts.toString()}
           icon={Package}
-          trend="-2% this month"
+          trend={`-2% ${t("dashboard.stats.thisMonth")}`}
         />
       </div>
 

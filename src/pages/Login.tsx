@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../features/auth/authStore";
 import { AtomScene } from "../features/three/AtomScene";
 
 export function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -28,7 +30,7 @@ export function Login() {
     if (success) {
       navigate(from, { replace: true });
     } else {
-      setError("Invalid email or password");
+      setError(t("auth.invalidCredentials"));
     }
   };
 
@@ -42,7 +44,7 @@ export function Login() {
             <span className="text-pink-400">Rosa</span> Admin
           </h1>
           <p className="text-slate-300 mt-2 text-sm">
-            Manage your beauty empire
+            {t("auth.signInSubtitle")}
           </p>
         </div>
       </div>
@@ -59,15 +61,17 @@ export function Login() {
             <Lock className="text-pink-400" size={22} />
           </div>
 
-          <h2 className="text-2xl font-bold text-white">Welcome back</h2>
+          <h2 className="text-2xl font-bold text-white">
+            {t("auth.welcomeBackUser", { email: "" }).replace(", ", "")}
+          </h2>
           <p className="text-slate-400 mt-1 text-sm">
-            Sign in to access your dashboard
+            {t("auth.signInSubtitle")}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Email
+                {t("auth.email")}
               </label>
               <input
                 type="email"
@@ -81,7 +85,7 @@ export function Login() {
 
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Password
+                {t("auth.password")}
               </label>
               <input
                 type="password"
@@ -103,12 +107,14 @@ export function Login() {
               type="submit"
               className="w-full bg-pink-500 hover:bg-pink-600 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
-              Sign In
+              {t("auth.signIn")}
             </button>
           </form>
 
           <div className="mt-6 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-            <p className="text-xs text-slate-500">Demo credentials:</p>
+            <p className="text-xs text-slate-500">
+              {t("auth.demoCredentials")}
+            </p>
             <p className="text-xs text-slate-400 mt-1 font-mono">
               admin@rosa.com / rosa123
             </p>

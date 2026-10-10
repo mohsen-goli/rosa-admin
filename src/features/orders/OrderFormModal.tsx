@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Order, OrderStatus } from "../../types/order";
 
 interface OrderFormModalProps {
@@ -8,16 +9,6 @@ interface OrderFormModalProps {
   onSubmit: (order: Omit<Order, "id">) => void;
   initialOrder?: Order;
 }
-
-const emptyForm: Omit<Order, "id"> = {
-  customerName: "",
-  customerEmail: "",
-  product: "",
-  amount: 0,
-  status: "pending",
-  date: new Date().toISOString().split("T")[0],
-  items: 1,
-};
 
 const inputClass =
   "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-pink-500";
@@ -31,6 +22,18 @@ export function OrderFormModal({
   onSubmit,
   initialOrder,
 }: OrderFormModalProps) {
+  const { t } = useTranslation();
+
+  const emptyForm: Omit<Order, "id"> = {
+    customerName: "",
+    customerEmail: "",
+    product: "",
+    amount: 0,
+    status: "pending",
+    date: new Date().toISOString().split("T")[0],
+    items: 1,
+  };
+
   const [form, setForm] = useState<Omit<Order, "id">>(emptyForm);
 
   useEffect(() => {
@@ -40,6 +43,7 @@ export function OrderFormModal({
     } else {
       setForm(emptyForm);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOrder, isOpen]);
 
   if (!isOpen) return null;
@@ -55,7 +59,9 @@ export function OrderFormModal({
       <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto transition-colors">
         <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-            {initialOrder ? "Edit Order" : "Add New Order"}
+            {initialOrder
+              ? t("orders.form.editTitle")
+              : t("orders.form.addTitle")}
           </h2>
           <button
             onClick={onClose}
@@ -67,7 +73,9 @@ export function OrderFormModal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className={labelClass}>Customer Name</label>
+            <label className={labelClass}>
+              {t("orders.form.customerName")}
+            </label>
             <input
               type="text"
               required
@@ -80,7 +88,9 @@ export function OrderFormModal({
           </div>
 
           <div>
-            <label className={labelClass}>Customer Email</label>
+            <label className={labelClass}>
+              {t("orders.form.customerEmail")}
+            </label>
             <input
               type="email"
               required
@@ -93,7 +103,7 @@ export function OrderFormModal({
           </div>
 
           <div>
-            <label className={labelClass}>Product</label>
+            <label className={labelClass}>{t("orders.form.product")}</label>
             <input
               type="text"
               required
@@ -105,7 +115,7 @@ export function OrderFormModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>Amount ($)</label>
+              <label className={labelClass}>{t("orders.form.amount")}</label>
               <input
                 type="number"
                 required
@@ -118,7 +128,7 @@ export function OrderFormModal({
               />
             </div>
             <div>
-              <label className={labelClass}>Items</label>
+              <label className={labelClass}>{t("orders.form.items")}</label>
               <input
                 type="number"
                 required
@@ -133,7 +143,7 @@ export function OrderFormModal({
           </div>
 
           <div>
-            <label className={labelClass}>Status</label>
+            <label className={labelClass}>{t("orders.form.status")}</label>
             <select
               value={form.status}
               onChange={(e) =>
@@ -141,15 +151,15 @@ export function OrderFormModal({
               }
               className={inputClass}
             >
-              <option value="pending">Pending</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="pending">{t("orders.status.pending")}</option>
+              <option value="shipped">{t("orders.status.shipped")}</option>
+              <option value="delivered">{t("orders.status.delivered")}</option>
+              <option value="cancelled">{t("orders.status.cancelled")}</option>
             </select>
           </div>
 
           <div>
-            <label className={labelClass}>Date</label>
+            <label className={labelClass}>{t("orders.form.date")}</label>
             <input
               type="date"
               required
@@ -165,13 +175,13 @@ export function OrderFormModal({
               onClick={onClose}
               className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              Cancel
+              {t("orders.form.cancel")}
             </button>
             <button
               type="submit"
               className="flex-1 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
-              {initialOrder ? "Update" : "Add"}
+              {initialOrder ? t("orders.form.update") : t("orders.form.add")}
             </button>
           </div>
         </form>

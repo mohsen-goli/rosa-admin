@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, LogOut, Moon, Sun } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../features/auth/authStore";
 import { useThemeStore } from "../features/theme/themeStore";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
 export function Settings() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -37,23 +39,22 @@ export function Settings() {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-          Settings
+          {t("settings.title")}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Manage your account preferences.
+          {t("settings.subtitle")}
         </p>
       </div>
 
-      {/* Profile Section */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 transition-colors">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
-          Profile
+          {t("settings.profile.title")}
         </h2>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Display Name
+              {t("settings.profile.displayName")}
             </label>
             <input
               type="text"
@@ -65,7 +66,7 @@ export function Settings() {
 
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Email
+              {t("settings.profile.email")}
             </label>
             <input
               type="email"
@@ -74,7 +75,7 @@ export function Settings() {
               className="w-full max-w-sm px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed"
             />
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              Email cannot be changed in demo.
+              {t("settings.profile.emailNote")}
             </p>
           </div>
 
@@ -83,22 +84,21 @@ export function Settings() {
             disabled={saveStatus === "saving"}
             className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            {saveStatus === "saving" && "Saving..."}
+            {saveStatus === "saving" && t("settings.profile.saving")}
             {saveStatus === "saved" && (
               <>
                 <Check size={16} />
-                Saved!
+                {t("settings.profile.saved")}
               </>
             )}
-            {saveStatus === "idle" && "Save Changes"}
+            {saveStatus === "idle" && t("settings.profile.saveChanges")}
           </button>
         </form>
       </section>
 
-      {/* Appearance Section */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 transition-colors">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
-          Appearance
+          {t("settings.appearance.title")}
         </h2>
 
         <div className="space-y-2">
@@ -113,7 +113,7 @@ export function Settings() {
             <div className="flex items-center gap-3">
               <Sun size={18} className="text-slate-700 dark:text-slate-300" />
               <span className="text-sm text-slate-800 dark:text-slate-100">
-                Light
+                {t("settings.appearance.light")}
               </span>
             </div>
             {theme === "light" && <Check size={16} className="text-pink-500" />}
@@ -130,7 +130,7 @@ export function Settings() {
             <div className="flex items-center gap-3">
               <Moon size={18} className="text-slate-700 dark:text-slate-300" />
               <span className="text-sm text-slate-800 dark:text-slate-100">
-                Dark
+                {t("settings.appearance.dark")}
               </span>
             </div>
             {theme === "dark" && <Check size={16} className="text-pink-500" />}
@@ -138,20 +138,19 @@ export function Settings() {
         </div>
       </section>
 
-      {/* Danger Zone */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-500/30 p-6 transition-colors">
         <h2 className="text-sm font-semibold text-red-600 dark:text-red-400 mb-2">
-          Danger Zone
+          {t("settings.dangerZone.title")}
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-          Sign out from your account. You will need to sign in again.
+          {t("settings.dangerZone.subtitle")}
         </p>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 border border-red-300 dark:border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <LogOut size={16} />
-          Sign Out
+          {t("settings.dangerZone.signOut")}
         </button>
       </section>
     </div>

@@ -1,0 +1,145 @@
+{
+  "nav": {
+    "dashboard": "داشبورد",
+    "orders": "سفارش‌ها",
+    "products": "محصولات",
+    "customers": "مشتریان",
+    "settings": "تنظیمات"
+  },
+  "auth": {
+    "welcomeBackUser": "خوش آمدی، {{email}}",
+    "signIn": "ورود",
+    "signInSubtitle": "برای دسترسی به داشبورد وارد شوید",
+    "email": "ایمیل",
+    "password": "رمز عبور",
+    "invalidCredentials": "ایمیل یا رمز عبور اشتباه است",
+    "demoCredentials": "اطلاعات ورود آزمایشی:",
+    "logout": "خروج"
+  },
+  "dashboard": {
+    "title": "نمای کلی داشبورد",
+    "subtitle": "امروز در رزا چه خبر است.",
+    "heroTitle": "به پنل رزا خوش آمدید",
+    "heroSubtitle": "موس را حرکت دهید تا تعامل کنید",
+    "stats": {
+      "totalOrders": "کل سفارش‌ها",
+      "revenue": "درآمد",
+      "uniqueCustomers": "مشتریان یکتا",
+      "productsSold": "محصولات فروخته‌شده",
+      "thisMonth": "این ماه",
+      "newThisMonth": "+۳ جدید"
+    },
+    "charts": {
+      "ordersByStatus": "سفارش‌ها بر اساس وضعیت",
+      "revenueTrend": "روند درآمد",
+      "monthlyOrders": "سفارش‌های ماهانه"
+    }
+  },
+  "orders": {
+    "title": "سفارش‌ها",
+    "count": "{{filtered}} از {{total}} سفارش",
+    "addOrder": "افزودن سفارش",
+    "searchPlaceholder": "جستجو بر اساس مشتری، محصول یا شناسه...",
+    "allStatuses": "همه‌ی وضعیت‌ها",
+    "noOrders": "سفارشی یافت نشد.",
+    "deleteConfirm": "حذف سفارش {{id}}؟",
+    "status": {
+      "pending": "در انتظار",
+      "shipped": "ارسال‌شده",
+      "delivered": "تحویل‌شده",
+      "cancelled": "لغو شده"
+    },
+    "table": {
+      "orderId": "شناسه",
+      "customer": "مشتری",
+      "product": "محصول",
+      "date": "تاریخ",
+      "amount": "مبلغ",
+      "status": "وضعیت",
+      "actions": "عملیات"
+    },
+    "form": {
+      "addTitle": "افزودن سفارش جدید",
+      "editTitle": "ویرایش سفارش",
+      "customerName": "نام مشتری",
+      "customerEmail": "ایمیل مشتری",
+      "product": "محصول",
+      "amount": "مبلغ (دلار)",
+      "items": "تعداد",
+      "status": "وضعیت",
+      "date": "تاریخ",
+      "cancel": "انصراف",
+      "add": "افزودن",
+      "update": "به‌روزرسانی"
+    }
+  },
+  "products": {
+    "title": "محصولات",
+    "count": "{{filtered}} از {{total}} محصول",
+    "addProduct": "افزودن محصول",
+    "searchPlaceholder": "جستجوی محصولات...",
+    "allCategories": "همه‌ی دسته‌ها",
+    "noProducts": "محصولی یافت نشد.",
+    "edit": "ویرایش",
+    "outOfStock": "ناموجود",
+    "lowStock": "کم: {{count}}",
+    "inStock": "موجود: {{count}}",
+    "categories": {
+      "lipstick": "رژ لب",
+      "skincare": "مراقبت پوست",
+      "perfume": "عطر",
+      "haircare": "مراقبت مو",
+      "makeup": "آرایش"
+    }
+  },
+  "customers": {
+    "title": "مشتریان",
+    "count": "{{filtered}} از {{total}} مشتری",
+    "searchPlaceholder": "جستجو بر اساس نام یا ایمیل...",
+    "noCustomers": "مشتری یافت نشد.",
+    "summary": {
+      "totalCustomers": "کل مشتریان",
+      "vipCustomers": "مشتریان VIP",
+      "totalRevenue": "کل درآمد"
+    },
+    "table": {
+      "customer": "مشتری",
+      "status": "وضعیت",
+      "orders": "سفارش‌ها",
+      "totalSpent": "مجموع خرید",
+      "lastOrder": "آخرین سفارش"
+    },
+    "status": {
+      "vip": "ویژه",
+      "regular": "معمولی",
+      "new": "جدید"
+    }
+  },
+  "settings": {
+    "title": "تنظیمات",
+    "subtitle": "تنظیمات حساب خود را مدیریت کنید.",
+    "profile": {
+      "title": "پروفایل",
+      "displayName": "نام نمایشی",
+      "email": "ایمیل",
+      "emailNote": "ایمیل در نسخه‌ی آزمایشی قابل تغییر نیست.",
+      "saveChanges": "ذخیره تغییرات",
+      "saving": "در حال ذخیره...",
+      "saved": "ذخیره شد!"
+    },
+    "appearance": {
+      "title": "ظاهر",
+      "light": "روشن",
+      "dark": "تیره"
+    },
+    "dangerZone": {
+      "title": "منطقه‌ی خطر",
+      "subtitle": "از حساب خود خارج شوید. باید دوباره وارد شوید.",
+      "signOut": "خروج از حساب"
+    }
+  },
+  "common": {
+    "language": "زبان",
+    "toggleTheme": "تغییر تم"
+  }
+}

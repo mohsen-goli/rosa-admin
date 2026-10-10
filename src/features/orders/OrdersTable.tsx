@@ -1,6 +1,7 @@
-import { Pencil, Trash2 } from 'lucide-react';
-import type { Order } from '../../types/order';
-import { StatusBadge } from '../../components/StatusBadge';
+import { Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { Order } from "../../types/order";
+import { StatusBadge } from "../../components/StatusBadge";
 
 interface OrdersTableProps {
   orders: Order[];
@@ -9,10 +10,12 @@ interface OrdersTableProps {
 }
 
 export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
+  const { t } = useTranslation();
+
   if (orders.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center transition-colors">
-        <p className="text-slate-400 text-sm">No orders found.</p>
+        <p className="text-slate-400 text-sm">{t("orders.noOrders")}</p>
       </div>
     );
   }
@@ -21,15 +24,29 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-start">
             <tr>
-              <th className="px-6 py-3 font-medium">Order ID</th>
-              <th className="px-6 py-3 font-medium">Customer</th>
-              <th className="px-6 py-3 font-medium">Product</th>
-              <th className="px-6 py-3 font-medium">Date</th>
-              <th className="px-6 py-3 font-medium">Amount</th>
-              <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium text-right">Actions</th>
+              <th className="px-6 py-3 font-medium text-start">
+                {t("orders.table.orderId")}
+              </th>
+              <th className="px-6 py-3 font-medium text-start">
+                {t("orders.table.customer")}
+              </th>
+              <th className="px-6 py-3 font-medium text-start">
+                {t("orders.table.product")}
+              </th>
+              <th className="px-6 py-3 font-medium text-start">
+                {t("orders.table.date")}
+              </th>
+              <th className="px-6 py-3 font-medium text-start">
+                {t("orders.table.amount")}
+              </th>
+              <th className="px-6 py-3 font-medium text-start">
+                {t("orders.table.status")}
+              </th>
+              <th className="px-6 py-3 font-medium text-end">
+                {t("orders.table.actions")}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -61,7 +78,7 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
                 <td className="px-6 py-4">
                   <StatusBadge status={order.status} />
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-end">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => onEdit(order)}
@@ -72,7 +89,9 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm(`Delete order ${order.id}?`)) {
+                        if (
+                          confirm(t("orders.deleteConfirm", { id: order.id }))
+                        ) {
                           onDelete(order.id);
                         }
                       }}

@@ -6,7 +6,8 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { mockOrders } from "../../data/orders";
+import { useTranslation } from "react-i18next";
+import { useOrdersStore } from "../orders/ordersStore";
 import type { OrderStatus } from "../../types/order";
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -16,15 +17,11 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: "#94a3b8",
 };
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  delivered: "Delivered",
-  shipped: "Shipped",
-  pending: "Pending",
-  cancelled: "Cancelled",
-};
-
 export function StatusDonut() {
-  const counts = mockOrders.reduce<Record<OrderStatus, number>>(
+  const { t } = useTranslation();
+  const orders = useOrdersStore((state) => state.orders);
+
+  const counts = orders.reduce<Record<OrderStatus, number>>(
     (acc, order) => {
       acc[order.status] = (acc[order.status] ?? 0) + 1;
       return acc;
@@ -33,15 +30,15 @@ export function StatusDonut() {
   );
 
   const data = (Object.keys(counts) as OrderStatus[]).map((status) => ({
-    name: STATUS_LABELS[status],
+    name: t(`orders.status.${status}`),
     value: counts[status],
     color: STATUS_COLORS[status],
   }));
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-slate-200">
-      <h3 className="text-sm font-semibold text-slate-700 mb-4">
-        Orders by Status
+    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 transition-colors">
+      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
+        {t("dashboard.charts.ordersByStatus")}
       </h3>
       <ResponsiveContainer width="100%" height={280}>
         <PieChart>

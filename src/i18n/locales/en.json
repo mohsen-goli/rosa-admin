@@ -1,0 +1,145 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "orders": "Orders",
+    "products": "Products",
+    "customers": "Customers",
+    "settings": "Settings"
+  },
+  "auth": {
+    "welcomeBackUser": "Welcome back, {{email}}",
+    "signIn": "Sign In",
+    "signInSubtitle": "Sign in to access your dashboard",
+    "email": "Email",
+    "password": "Password",
+    "invalidCredentials": "Invalid email or password",
+    "demoCredentials": "Demo credentials:",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard Overview",
+    "subtitle": "Here's what's happening with Rosa today.",
+    "heroTitle": "Welcome to Rosa Admin",
+    "heroSubtitle": "Move your mouse to interact",
+    "stats": {
+      "totalOrders": "Total Orders",
+      "revenue": "Revenue",
+      "uniqueCustomers": "Unique Customers",
+      "productsSold": "Products Sold",
+      "thisMonth": "this month",
+      "newThisMonth": "+3 new"
+    },
+    "charts": {
+      "ordersByStatus": "Orders by Status",
+      "revenueTrend": "Revenue Trend",
+      "monthlyOrders": "Monthly Orders"
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "count": "{{filtered}} of {{total}} orders",
+    "addOrder": "Add Order",
+    "searchPlaceholder": "Search by customer, product or order ID...",
+    "allStatuses": "All Statuses",
+    "noOrders": "No orders found.",
+    "deleteConfirm": "Delete order {{id}}?",
+    "status": {
+      "pending": "Pending",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "table": {
+      "orderId": "Order ID",
+      "customer": "Customer",
+      "product": "Product",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "addTitle": "Add New Order",
+      "editTitle": "Edit Order",
+      "customerName": "Customer Name",
+      "customerEmail": "Customer Email",
+      "product": "Product",
+      "amount": "Amount ($)",
+      "items": "Items",
+      "status": "Status",
+      "date": "Date",
+      "cancel": "Cancel",
+      "add": "Add",
+      "update": "Update"
+    }
+  },
+  "products": {
+    "title": "Products",
+    "count": "{{filtered}} of {{total}} products",
+    "addProduct": "Add Product",
+    "searchPlaceholder": "Search products...",
+    "allCategories": "All Categories",
+    "noProducts": "No products found.",
+    "edit": "Edit",
+    "outOfStock": "Out of stock",
+    "lowStock": "Low: {{count}}",
+    "inStock": "In stock: {{count}}",
+    "categories": {
+      "lipstick": "Lipstick",
+      "skincare": "Skincare",
+      "perfume": "Perfume",
+      "haircare": "Haircare",
+      "makeup": "Makeup"
+    }
+  },
+  "customers": {
+    "title": "Customers",
+    "count": "{{filtered}} of {{total}} customers",
+    "searchPlaceholder": "Search by name or email...",
+    "noCustomers": "No customers found.",
+    "summary": {
+      "totalCustomers": "Total Customers",
+      "vipCustomers": "VIP Customers",
+      "totalRevenue": "Total Revenue"
+    },
+    "table": {
+      "customer": "Customer",
+      "status": "Status",
+      "orders": "Orders",
+      "totalSpent": "Total Spent",
+      "lastOrder": "Last Order"
+    },
+    "status": {
+      "vip": "VIP",
+      "regular": "Regular",
+      "new": "New"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account preferences.",
+    "profile": {
+      "title": "Profile",
+      "displayName": "Display Name",
+      "email": "Email",
+      "emailNote": "Email cannot be changed in demo.",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "saved": "Saved!"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "subtitle": "Sign out from your account. You will need to sign in again.",
+      "signOut": "Sign Out"
+    }
+  },
+  "common": {
+    "language": "Language",
+    "toggleTheme": "Toggle theme"
+  }
+}

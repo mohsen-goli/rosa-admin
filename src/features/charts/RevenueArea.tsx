@@ -7,6 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useTranslation } from "react-i18next";
 
 const data = [
   { month: "Apr", revenue: 4200 },
@@ -18,10 +19,12 @@ const data = [
 ];
 
 export function RevenueArea() {
+  const { t } = useTranslation();
+
   return (
-    <div className="bg-white rounded-xl p-6 border border-slate-200">
-      <h3 className="text-sm font-semibold text-slate-700 mb-4">
-        Revenue Trend
+    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 transition-colors">
+      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
+        {t("dashboard.charts.revenueTrend")}
       </h3>
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={data}>

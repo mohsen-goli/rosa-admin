@@ -8,6 +8,7 @@ import {
   Package,
   Settings,
 } from "lucide-react";
+import { useLanguageStore } from "../../features/language/languageStore";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,10 +25,17 @@ const navItems = [
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
+  const language = useLanguageStore((state) => state.language);
+  const isRTL = language === "fa";
+
+  // موقعیت Sidebar وقتی بسته‌ست (خارج از صفحه)
+  const closedTransform = isRTL
+    ? "translateX(100%)" // فارسی: برو راست
+    : "translateX(-100%)"; // انگلیسی: برو چپ
 
   return (
     <>
-      {/* Overlay for mobile */}
+      {/* Overlay */}
       {isOpen && (
         <div
           onClick={onClose}
@@ -37,10 +45,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
+        style={{
+          transform: isOpen ? "translateX(0)" : closedTransform,
+          [isRTL ? "right" : "left"]: isOpen ? 0 : undefined,
+        }}
         className={`w-64 bg-slate-900 dark:bg-slate-950 text-white h-screen flex flex-col transition-transform duration-300 z-50
-          fixed lg:static top-0 start-0
-          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          rtl:translate-x-full rtl:lg:translate-x-0
+          fixed lg:static top-0
+          lg:!transform-none lg:!left-0 lg:!right-auto
         `}
       >
         <div className="p-6 border-b border-slate-800 dark:border-slate-900 flex items-center justify-between">

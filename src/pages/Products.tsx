@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Search, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { mockProducts } from "../data/products";
-import type { Product, ProductCategory } from "../types/product";
+import type { ProductCategory } from "../types/product";
 
 const categoryColors: Record<ProductCategory, string> = {
   lipstick: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",

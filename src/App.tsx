@@ -1,16 +1,18 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from './components/layout/Layout';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { Orders } from './pages/Orders';
-import { Products } from './pages/Products';
-import { Customers } from './pages/Customers';
-import { Settings } from './pages/Settings';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeApplier } from "./components/ThemeApplier";
+import { Layout } from "./components/layout/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Login } from "./pages/Login";
+import { Dashboard } from "./pages/Dashboard";
+import { Orders } from "./pages/Orders";
+import { Products } from "./pages/Products";
+import { Customers } from "./pages/Customers";
+import { Settings } from "./pages/Settings";
 
 function App() {
   return (
     <BrowserRouter>
+      <ThemeApplier />
       <Routes>
         <Route path="/login" element={<Login />} />
 

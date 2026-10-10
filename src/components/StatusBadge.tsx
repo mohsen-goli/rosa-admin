@@ -5,10 +5,14 @@ interface StatusBadgeProps {
 }
 
 const statusStyles: Record<OrderStatus, string> = {
-  delivered: "bg-green-100 text-green-700",
-  shipped: "bg-purple-100 text-purple-700",
-  pending: "bg-amber-100 text-amber-700",
-  cancelled: "bg-slate-100 text-slate-600",
+  delivered:
+    "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400",
+  shipped:
+    "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400",
+  pending:
+    "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+  cancelled:
+    "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
 };
 
 const statusLabels: Record<OrderStatus, string> = {

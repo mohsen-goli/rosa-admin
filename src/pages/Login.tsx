@@ -34,7 +34,6 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex bg-slate-950">
-      {/* بخش چپ: شکل سه‌بعدی */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-slate-950 via-purple-950 to-pink-950">
         <AtomScene />
 
@@ -48,7 +47,6 @@ export function Login() {
         </div>
       </div>
 
-      {/* بخش راست: فرم */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
           <div className="lg:hidden text-center mb-8">

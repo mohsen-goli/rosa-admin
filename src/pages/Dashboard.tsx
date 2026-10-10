@@ -2,10 +2,11 @@ import { ShoppingCart, DollarSign, Users, Package } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import { calculateStats } from "../lib/stats";
 import { useOrdersStore } from "../features/orders/ordersStore";
+import { HeroScene } from "../features/three/HeroScene";
 import { StatusDonut } from "../features/charts/StatusDonut";
 import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
-import { HeroScene } from "../features/three/HeroScene";
+
 export function Dashboard() {
   const orders = useOrdersStore((state) => state.orders);
   const stats = calculateStats(orders);
@@ -13,11 +14,12 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       <HeroScene />
+
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
           Dashboard Overview
         </h1>
-        <p className="text-slate-500 mt-1">
+        <p className="text-slate-500 dark:text-slate-400 mt-1">
           Here's what's happening with Rosa today.
         </p>
       </div>

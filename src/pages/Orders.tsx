@@ -44,8 +44,10 @@ export function Orders() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Orders</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+            Orders
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             {filteredOrders.length} of {orders.length} orders
           </p>
         </div>
@@ -72,7 +74,7 @@ export function Orders() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by customer, product or order ID..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
           />
         </div>
 
@@ -81,7 +83,7 @@ export function Orders() {
           onChange={(e) =>
             setStatusFilter(e.target.value as OrderStatus | "all")
           }
-          className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent cursor-pointer"
+          className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent cursor-pointer"
         >
           {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>

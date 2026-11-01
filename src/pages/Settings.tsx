@@ -30,11 +30,14 @@ export function Settings() {
     }, 800);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
-
   return (
     <div className="space-y-6 max-w-3xl">
       <div>

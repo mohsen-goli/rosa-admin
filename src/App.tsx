@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { ThemeApplier } from "./components/ThemeApplier";
 import { LanguageApplier } from "./components/LanguageApplier";
 import { Layout } from "./components/layout/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { initializeAuth } from "./features/auth/authStore";
 
 const Login = lazy(() =>
   import("./pages/Login").then((m) => ({ default: m.Login })),
@@ -24,6 +25,14 @@ const Settings = lazy(() =>
   import("./pages/Settings").then((m) => ({ default: m.Settings })),
 );
 
+function AuthInitializer() {
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
+  return null;
+}
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center p-12">
@@ -35,8 +44,10 @@ function PageLoader() {
 function App() {
   return (
     <BrowserRouter>
+      <AuthInitializer />
       <ThemeApplier />
       <LanguageApplier />
+
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -49,46 +60,11 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route
-              index
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <Dashboard />
-                </Suspense>
-              }
-            />
-            <Route
-              path="orders"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <Orders />
-                </Suspense>
-              }
-            />
-            <Route
-              path="products"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <Products />
-                </Suspense>
-              }
-            />
-            <Route
-              path="customers"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <Customers />
-                </Suspense>
-              }
-            />
-            <Route
-              path="settings"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <Settings />
-                </Suspense>
-              }
-            />
+            <Route index element={<Dashboard />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="products" element={<Products />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </Suspense>

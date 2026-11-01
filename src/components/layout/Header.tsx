@@ -31,12 +31,14 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const titleKey = pageTitleKeys[location.pathname] ?? "nav.dashboard";
   const title = t(titleKey);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
-
   const toggleLanguage = () => {
     const newLang: Language = language === "en" ? "fa" : "en";
     setLanguage(newLang);

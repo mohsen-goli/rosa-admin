@@ -1,8 +1,33 @@
-import { useState, useMemo } from "react";
-import { Search, Plus } from "lucide-react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  type FormEvent,
+} from "react";
+import { Search, Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { mockProducts } from "../data/products";
+import { supabase } from "../lib/supabase";
 import type { ProductCategory } from "../types/product";
+
+interface AdminProduct {
+  id: string;
+  name: string;
+  category: ProductCategory;
+  price: number;
+  stock: number;
+  description: string;
+  emoji: string;
+  isActive: boolean;
+}
+
+interface EditForm {
+  name: string;
+  description: string;
+  price: string;
+  stock: string;
+  category: ProductCategory;
+}
 
 const categoryColors: Record<ProductCategory, string> = {
   lipstick: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
@@ -14,12 +39,156 @@ const categoryColors: Record<ProductCategory, string> = {
   makeup: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
 };
 
+const categoryEmojis: Record<ProductCategory, string> = {
+  lipstick: "💄",
+  skincare: "🧴",
+  perfume: "🌸",
+  haircare: "🧖",
+  makeup: "💋",
+};
+
+const inputClass =
+  "w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500";
+
 export function Products() {
   const { t } = useTranslation();
+
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">(
     "all",
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
+    null,
+  );
+
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: "",
+    description: "",
+    price: "",
+    stock: "",
+    category: "skincare",
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from("products")
+        .select("id, name, description, price, category, stock, is_active")
+        .order("created_at", { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      const mappedProducts: AdminProduct[] = (data ?? []).map((row) => {
+        const category = (
+          row.category in categoryColors ? row.category : "makeup"
+        ) as ProductCategory;
+
+        return {
+          id: String(row.id),
+          name: row.name ?? "",
+          description: row.description ?? "",
+          price: Number(row.price ?? 0),
+          category,
+          stock: Number(row.stock ?? 0),
+          emoji: categoryEmojis[category],
+          isActive: Boolean(row.is_active),
+        };
+      });
+
+      setProducts(mappedProducts);
+    } catch (err) {
+      console.error("Failed to load products:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not load products. Please try again.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProducts();
+  }, [loadProducts]);
+
+  const openEditModal = (product: AdminProduct) => {
+    setEditingProduct(product);
+    setEditForm({
+      name: product.name,
+      description: product.description,
+      price: String(product.price),
+      stock: String(product.stock),
+      category: product.category,
+    });
+    setSaveError("");
+  };
+
+  const closeEditModal = () => {
+    if (isSaving) return;
+    setEditingProduct(null);
+    setSaveError("");
+  };
+
+  const handleSaveProduct = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!editingProduct) return;
+
+    const price = Number(editForm.price);
+    const stock = Number(editForm.stock);
+
+    if (
+      !editForm.name.trim() ||
+      !Number.isFinite(price) ||
+      price < 0 ||
+      !Number.isInteger(stock) ||
+      stock < 0
+    ) {
+      setSaveError("Please enter valid product information.");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError("");
+
+    try {
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({
+          name: editForm.name.trim(),
+          description: editForm.description.trim(),
+          price,
+          stock,
+          category: editForm.category,
+        })
+        .eq("id", editingProduct.id);
+
+      if (updateError) throw updateError;
+
+      await loadProducts();
+      setEditingProduct(null);
+    } catch (err) {
+      console.error("Failed to update product:", err);
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : "Could not update product. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const categoryOptions: { value: ProductCategory | "all"; label: string }[] = [
     { value: "all", label: t("products.allCategories") },
@@ -31,7 +200,7 @@ export function Products() {
   ];
 
   const filteredProducts = useMemo(() => {
-    return mockProducts.filter((product) => {
+    return products.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(search.toLowerCase()) ||
         product.description.toLowerCase().includes(search.toLowerCase());
@@ -41,7 +210,7 @@ export function Products() {
 
       return matchesSearch && matchesCategory;
     });
-  }, [search, categoryFilter]);
+  }, [products, search, categoryFilter]);
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
@@ -51,6 +220,7 @@ export function Products() {
           "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400",
       };
     }
+
     if (stock < 10) {
       return {
         label: t("products.lowStock", { count: stock }),
@@ -58,6 +228,7 @@ export function Products() {
           "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
       };
     }
+
     return {
       label: t("products.inStock", { count: stock }),
       className:
@@ -72,14 +243,20 @@ export function Products() {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
             {t("products.title")}
           </h1>
+
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             {t("products.count", {
               filtered: filteredProducts.length,
-              total: mockProducts.length,
+              total: products.length,
             })}
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+
+        <button
+          disabled
+          title="Product creation will be enabled in the next step"
+          className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium opacity-60 cursor-not-allowed"
+        >
           <Plus size={16} />
           {t("products.addProduct")}
         </button>
@@ -91,6 +268,7 @@ export function Products() {
             className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400"
             size={18}
           />
+
           <input
             type="text"
             value={search}
@@ -115,7 +293,22 @@ export function Products() {
         </select>
       </div>
 
-      {filteredProducts.length === 0 ? (
+      {isLoading ? (
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center">
+          <div className="w-8 h-8 mx-auto border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-400 mt-4">Loading products...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-red-200 dark:border-red-500/30 text-center">
+          <p className="text-sm text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => void loadProducts()}
+            className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            Try again
+          </button>
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center">
           <p className="text-slate-400 text-sm">{t("products.noProducts")}</p>
         </div>
@@ -123,6 +316,7 @@ export function Products() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {filteredProducts.map((product) => {
             const stockBadge = getStockBadge(product.stock);
+
             return (
               <div
                 key={product.id}
@@ -132,16 +326,24 @@ export function Products() {
                   <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-3xl shrink-0">
                     {product.emoji}
                   </div>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${categoryColors[product.category]}`}
-                  >
-                    {t(`products.categories.${product.category}`)}
-                  </span>
+
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${categoryColors[product.category]}`}
+                    >
+                      {t(`products.categories.${product.category}`)}
+                    </span>
+
+                    {!product.isActive && (
+                      <span className="text-[10px] text-red-500">Inactive</span>
+                    )}
+                  </div>
                 </div>
 
                 <h3 className="font-semibold text-slate-800 dark:text-slate-100">
                   {product.name}
                 </h3>
+
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {product.description}
                 </p>
@@ -151,19 +353,172 @@ export function Products() {
                     <p className="text-lg font-bold text-slate-800 dark:text-slate-100">
                       ${product.price}
                     </p>
+
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium mt-1 whitespace-nowrap ${stockBadge.className}`}
                     >
                       {stockBadge.label}
                     </span>
                   </div>
-                  <button className="text-xs text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 font-medium whitespace-nowrap">
+
+                  <button
+                    onClick={() => openEditModal(product)}
+                    className="text-xs text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 font-medium whitespace-nowrap"
+                  >
                     {t("products.edit")} ←
                   </button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-product-title"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-xl"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
+              <h2
+                id="edit-product-title"
+                className="text-lg font-bold text-slate-800 dark:text-slate-100"
+              >
+                Edit product
+              </h2>
+
+              <button
+                type="button"
+                onClick={closeEditModal}
+                disabled={isSaving}
+                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                  Product name
+                </label>
+                <input
+                  className={inputClass}
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  className={inputClass}
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      description: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                    Price ($)
+                  </label>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editForm.price}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, price: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                    Stock
+                  </label>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={editForm.stock}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, stock: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                  Category
+                </label>
+                <select
+                  className={inputClass}
+                  value={editForm.category}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      category: e.target.value as ProductCategory,
+                    })
+                  }
+                >
+                  {categoryOptions
+                    .filter((option) => option.value !== "all")
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {saveError && (
+                <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg">
+                  {saveError}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  disabled={isSaving}
+                  className="px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
+                >
+                  {isSaving ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

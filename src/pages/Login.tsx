@@ -14,28 +14,42 @@ export function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
   const login = useAuthStore((state) => state.login);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const from = (location.state as { from?: string } | null)?.from ?? "/";
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to={from} replace />;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
 
-    const success = login(email, password);
-    if (success) {
+    try {
+      await login(email.trim(), password);
       navigate(from, { replace: true });
-    } else {
-      setError(t("auth.invalidCredentials"));
+    } catch {
+      setError("ایمیل یا رمز عبور اشتباه است.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -69,6 +83,7 @@ export function Login() {
           </div>
 
           <h2 className="text-2xl font-bold text-white">Welcome back</h2>
+
           <p className="text-slate-400 mt-1 text-sm">
             {t("auth.signInSubtitle")}
           </p>
@@ -78,12 +93,14 @@ export function Login() {
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
                 {t("auth.email")}
               </label>
+
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@rosa.com"
+                placeholder="Enter your email"
                 className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
             </div>
@@ -92,12 +109,14 @@ export function Login() {
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
                 {t("auth.password")}
               </label>
+
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
             </div>
@@ -110,20 +129,12 @@ export function Login() {
 
             <button
               type="submit"
-              className="w-full bg-pink-500 hover:bg-pink-600 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
+              disabled={isSubmitting}
+              className="w-full bg-pink-500 hover:bg-pink-600 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
-              {t("auth.signIn")}
+              {isSubmitting ? "Signing in..." : t("auth.signIn")}
             </button>
           </form>
-
-          <div className="mt-6 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-            <p className="text-xs text-slate-500">
-              {t("auth.demoCredentials")}
-            </p>
-            <p className="text-xs text-slate-400 mt-1 font-mono">
-              admin@rosa.com / rosa123
-            </p>
-          </div>
         </div>
       </div>
     </div>

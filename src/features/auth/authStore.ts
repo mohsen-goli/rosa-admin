@@ -1,32 +1,62 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "../../lib/supabase";
 
 interface AuthState {
   isAuthenticated: boolean;
-  user: { email: string } | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
+  isLoading: boolean;
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const VALID_EMAIL = "admin@rosa.com";
-const VALID_PASSWORD = "rosa123";
+export const useAuthStore = create<AuthState>(() => ({
+  isAuthenticated: false,
+  isLoading: true,
+  user: null,
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      isAuthenticated: false,
-      user: null,
+  login: async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      login: (email, password) => {
-        if (email === VALID_EMAIL && password === VALID_PASSWORD) {
-          set({ isAuthenticated: true, user: { email } });
-          return true;
-        }
-        return false;
-      },
+    if (error) {
+      throw error;
+    }
+  },
 
-      logout: () => set({ isAuthenticated: false, user: null }),
-    }),
-    { name: "rosa-auth" },
-  ),
-);
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
+  },
+}));
+
+let authInitialized = false;
+
+export function initializeAuth() {
+  if (authInitialized) return;
+
+  authInitialized = true;
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    useAuthStore.setState({
+      user: session?.user ?? null,
+      isAuthenticated: Boolean(session?.user),
+      isLoading: false,
+    });
+  });
+
+  void supabase.auth.getSession().then(({ data, error }) => {
+    const user = error ? null : (data.session?.user ?? null);
+
+    useAuthStore.setState({
+      user,
+      isAuthenticated: Boolean(user),
+      isLoading: false,
+    });
+  });
+}

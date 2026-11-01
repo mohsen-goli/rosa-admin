@@ -17,16 +17,18 @@ interface AdminProduct {
   price: number;
   stock: number;
   description: string;
+  imageUrl: string;
   emoji: string;
   isActive: boolean;
 }
 
-interface EditForm {
+interface ProductForm {
   name: string;
   description: string;
   price: string;
   stock: string;
   category: ProductCategory;
+  imageUrl: string;
 }
 
 const categoryColors: Record<ProductCategory, string> = {
@@ -50,6 +52,15 @@ const categoryEmojis: Record<ProductCategory, string> = {
 const inputClass =
   "w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500";
 
+const emptyForm: ProductForm = {
+  name: "",
+  description: "",
+  price: "",
+  stock: "",
+  category: "skincare",
+  imageUrl: "",
+};
+
 export function Products() {
   const { t } = useTranslation();
 
@@ -64,14 +75,10 @@ export function Products() {
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
     null,
   );
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [editForm, setEditForm] = useState<EditForm>({
-    name: "",
-    description: "",
-    price: "",
-    stock: "",
-    category: "skincare",
-  });
+  const [editForm, setEditForm] = useState<ProductForm>(emptyForm);
+  const [addForm, setAddForm] = useState<ProductForm>(emptyForm);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -83,7 +90,9 @@ export function Products() {
     try {
       const { data, error: fetchError } = await supabase
         .from("products")
-        .select("id, name, description, price, category, stock, is_active")
+        .select(
+          "id, name, description, price, category, stock, image_url, is_active",
+        )
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -100,6 +109,7 @@ export function Products() {
           price: Number(row.price ?? 0),
           category,
           stock: Number(row.stock ?? 0),
+          imageUrl: row.image_url ?? "",
           emoji: categoryEmojis[category],
           isActive: Boolean(row.is_active),
         };
@@ -124,20 +134,34 @@ export function Products() {
 
   const openEditModal = (product: AdminProduct) => {
     setEditingProduct(product);
+
     setEditForm({
       name: product.name,
       description: product.description,
       price: String(product.price),
       stock: String(product.stock),
       category: product.category,
+      imageUrl: product.imageUrl,
     });
+
     setSaveError("");
   };
 
-  const closeEditModal = () => {
-    if (isSaving) return;
-    setEditingProduct(null);
-    setSaveError("");
+  const validateForm = (form: ProductForm) => {
+    const price = Number(form.price);
+    const stock = Number(form.stock);
+
+    if (
+      !form.name.trim() ||
+      !Number.isFinite(price) ||
+      price < 0 ||
+      !Number.isInteger(stock) ||
+      stock < 0
+    ) {
+      return null;
+    }
+
+    return { price, stock };
   };
 
   const handleSaveProduct = async (e: FormEvent<HTMLFormElement>) => {
@@ -145,17 +169,15 @@ export function Products() {
 
     if (!editingProduct) return;
 
-    const price = Number(editForm.price);
-    const stock = Number(editForm.stock);
+    const values = validateForm(editForm);
 
-    if (
-      !editForm.name.trim() ||
-      !Number.isFinite(price) ||
-      price < 0 ||
-      !Number.isInteger(stock) ||
-      stock < 0
-    ) {
+    if (!values) {
       setSaveError("Please enter valid product information.");
+      return;
+    }
+
+    if (!editForm.imageUrl.trim()) {
+      setSaveError("Please enter a product image URL.");
       return;
     }
 
@@ -168,9 +190,10 @@ export function Products() {
         .update({
           name: editForm.name.trim(),
           description: editForm.description.trim(),
-          price,
-          stock,
+          price: values.price,
+          stock: values.stock,
           category: editForm.category,
+          image_url: editForm.imageUrl.trim(),
         })
         .eq("id", editingProduct.id);
 
@@ -184,6 +207,52 @@ export function Products() {
         err instanceof Error
           ? err.message
           : "Could not update product. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddProduct = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const values = validateForm(addForm);
+
+    if (!values) {
+      setSaveError("Please enter valid product information.");
+      return;
+    }
+
+    if (!addForm.imageUrl.trim()) {
+      setSaveError("Please enter a product image URL.");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError("");
+
+    try {
+      const { error: insertError } = await supabase.from("products").insert({
+        name: addForm.name.trim(),
+        description: addForm.description.trim(),
+        price: values.price,
+        stock: values.stock,
+        category: addForm.category,
+        image_url: addForm.imageUrl.trim(),
+        is_active: true,
+      });
+
+      if (insertError) throw insertError;
+
+      await loadProducts();
+      setAddForm(emptyForm);
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.error("Failed to create product:", err);
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : "Could not create product. Please try again.",
       );
     } finally {
       setIsSaving(false);
@@ -236,6 +305,19 @@ export function Products() {
     };
   };
 
+  const closeEditModal = () => {
+    if (isSaving) return;
+    setEditingProduct(null);
+    setSaveError("");
+  };
+
+  const closeAddModal = () => {
+    if (isSaving) return;
+    setIsAddModalOpen(false);
+    setAddForm(emptyForm);
+    setSaveError("");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -253,9 +335,13 @@ export function Products() {
         </div>
 
         <button
-          disabled
-          title="Product creation will be enabled in the next step"
-          className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium opacity-60 cursor-not-allowed"
+          type="button"
+          onClick={() => {
+            setSaveError("");
+            setAddForm(emptyForm);
+            setIsAddModalOpen(true);
+          }}
+          className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium"
         >
           <Plus size={16} />
           {t("products.addProduct")}
@@ -323,8 +409,16 @@ export function Products() {
                 className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 hover:shadow-md transition-all group"
               >
                 <div className="flex items-start justify-between mb-4 gap-2">
-                  <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-3xl shrink-0">
-                    {product.emoji}
+                  <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-3xl shrink-0 overflow-hidden">
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      product.emoji
+                    )}
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
@@ -365,7 +459,7 @@ export function Products() {
                     onClick={() => openEditModal(product)}
                     className="text-xs text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 font-medium whitespace-nowrap"
                   >
-                    {t("products.edit")} ←
+                    {t("products.edit")} →
                   </button>
                 </div>
               </div>
@@ -374,25 +468,21 @@ export function Products() {
         </div>
       )}
 
-      {editingProduct && (
+      {(editingProduct || isAddModalOpen) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="edit-product-title"
             className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-xl"
           >
             <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
-              <h2
-                id="edit-product-title"
-                className="text-lg font-bold text-slate-800 dark:text-slate-100"
-              >
-                Edit product
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                {editingProduct ? "Edit product" : "Add new product"}
               </h2>
 
               <button
                 type="button"
-                onClick={closeEditModal}
+                onClick={editingProduct ? closeEditModal : closeAddModal}
                 disabled={isSaving}
                 className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                 aria-label="Close"
@@ -401,16 +491,21 @@ export function Products() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="p-5 space-y-4">
+            <form
+              onSubmit={editingProduct ? handleSaveProduct : handleAddProduct}
+              className="p-5 space-y-4"
+            >
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                   Product name
                 </label>
                 <input
                   className={inputClass}
-                  value={editForm.name}
+                  value={editingProduct ? editForm.name : addForm.name}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, name: e.target.value })
+                    editingProduct
+                      ? setEditForm({ ...editForm, name: e.target.value })
+                      : setAddForm({ ...addForm, name: e.target.value })
                   }
                   required
                 />
@@ -423,12 +518,19 @@ export function Products() {
                 <textarea
                   className={inputClass}
                   rows={3}
-                  value={editForm.description}
+                  value={
+                    editingProduct ? editForm.description : addForm.description
+                  }
                   onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      description: e.target.value,
-                    })
+                    editingProduct
+                      ? setEditForm({
+                          ...editForm,
+                          description: e.target.value,
+                        })
+                      : setAddForm({
+                          ...addForm,
+                          description: e.target.value,
+                        })
                   }
                 />
               </div>
@@ -443,9 +545,11 @@ export function Products() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={editForm.price}
+                    value={editingProduct ? editForm.price : addForm.price}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, price: e.target.value })
+                      editingProduct
+                        ? setEditForm({ ...editForm, price: e.target.value })
+                        : setAddForm({ ...addForm, price: e.target.value })
                     }
                     required
                   />
@@ -460,9 +564,11 @@ export function Products() {
                     type="number"
                     min="0"
                     step="1"
-                    value={editForm.stock}
+                    value={editingProduct ? editForm.stock : addForm.stock}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, stock: e.target.value })
+                      editingProduct
+                        ? setEditForm({ ...editForm, stock: e.target.value })
+                        : setAddForm({ ...addForm, stock: e.target.value })
                     }
                     required
                   />
@@ -475,12 +581,17 @@ export function Products() {
                 </label>
                 <select
                   className={inputClass}
-                  value={editForm.category}
+                  value={editingProduct ? editForm.category : addForm.category}
                   onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      category: e.target.value as ProductCategory,
-                    })
+                    editingProduct
+                      ? setEditForm({
+                          ...editForm,
+                          category: e.target.value as ProductCategory,
+                        })
+                      : setAddForm({
+                          ...addForm,
+                          category: e.target.value as ProductCategory,
+                        })
                   }
                 >
                   {categoryOptions
@@ -493,6 +604,32 @@ export function Products() {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                  Product image URL
+                </label>
+                <input
+                  className={inputClass}
+                  type="url"
+                  placeholder="https://example.com/product.jpg"
+                  value={editingProduct ? editForm.imageUrl : addForm.imageUrl}
+                  onChange={(e) =>
+                    editingProduct
+                      ? setEditForm({ ...editForm, imageUrl: e.target.value })
+                      : setAddForm({ ...addForm, imageUrl: e.target.value })
+                  }
+                  required
+                />
+
+                {(editingProduct ? editForm.imageUrl : addForm.imageUrl) && (
+                  <img
+                    src={editingProduct ? editForm.imageUrl : addForm.imageUrl}
+                    alt="Product preview"
+                    className="mt-3 w-24 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                  />
+                )}
+              </div>
+
               {saveError && (
                 <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg">
                   {saveError}
@@ -502,9 +639,9 @@ export function Products() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={closeEditModal}
+                  onClick={editingProduct ? closeEditModal : closeAddModal}
                   disabled={isSaving}
-                  className="px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
@@ -514,7 +651,11 @@ export function Products() {
                   disabled={isSaving}
                   className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
                 >
-                  {isSaving ? "Saving..." : "Save changes"}
+                  {isSaving
+                    ? "Saving..."
+                    : editingProduct
+                      ? "Save changes"
+                      : "Add product"}
                 </button>
               </div>
             </form>

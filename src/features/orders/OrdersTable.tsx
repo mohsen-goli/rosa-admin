@@ -1,105 +1,138 @@
-import { Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Order } from "../../types/order";
+import type {
+  DatabaseOrder,
+  DatabaseOrderStatus,
+} from "../../types/databaseOrder";
 import { StatusBadge } from "../../components/StatusBadge";
 
 interface OrdersTableProps {
-  orders: Order[];
-  onDelete: (id: string) => void;
-  onEdit: (order: Order) => void;
+  orders: DatabaseOrder[];
+  onStatusChange: (id: string, status: DatabaseOrderStatus) => void;
+  updatingOrderId: string | null;
 }
 
-export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
+const statusOptions: DatabaseOrderStatus[] = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+];
+
+export function OrdersTable({
+  orders,
+  onStatusChange,
+  updatingOrderId,
+}: OrdersTableProps) {
   const { t } = useTranslation();
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center">
         <p className="text-slate-400 text-sm">{t("orders.noOrders")}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[800px]">
+        <table className="w-full text-sm min-w-[1050px]">
           <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
             <tr>
-              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
-                {t("orders.table.orderId")}
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">
+                Order ID
               </th>
-              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
-                {t("orders.table.customer")}
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">
+                Customer
               </th>
-              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
-                {t("orders.table.product")}
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">
+                Products
               </th>
-              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
-                {t("orders.table.date")}
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">Date</th>
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">
+                Total
               </th>
-              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
-                {t("orders.table.amount")}
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">
+                Payment
               </th>
-              <th className="px-4 sm:px-6 py-3 font-medium text-start whitespace-nowrap">
-                {t("orders.table.status")}
-              </th>
-              <th className="px-4 sm:px-6 py-3 font-medium text-end whitespace-nowrap">
-                {t("orders.table.actions")}
+              <th className="px-4 sm:px-6 py-3 text-start font-medium">
+                Order Status
               </th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {orders.map((order) => (
               <tr
                 key={order.id}
                 className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
-                <td className="px-4 sm:px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                  {order.id}
+                <td className="px-4 sm:px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">
+                  #{order.orderNumber}
                 </td>
+
                 <td className="px-4 sm:px-6 py-4">
-                  <div className="font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                  <div className="font-medium text-slate-800 dark:text-slate-100">
                     {order.customerName}
                   </div>
-                  <div className="text-xs text-slate-400 dark:text-slate-500">
-                    {order.customerEmail}
+                  <div className="text-xs text-slate-400">
+                    {order.customerEmail || "No email"}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {order.customerPhone || "No phone"}
                   </div>
                 </td>
-                <td className="px-4 sm:px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                  {order.product}
+
+                <td className="px-4 sm:px-6 py-4 text-slate-600 dark:text-slate-300">
+                  <div className="space-y-1">
+                    {order.items.map((item) => (
+                      <div key={item.id}>
+                        {item.productName} × {item.quantity}
+                      </div>
+                    ))}
+                  </div>
                 </td>
-                <td className="px-4 sm:px-6 py-4 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
-                  {order.date}
+
+                <td className="px-4 sm:px-6 py-4 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  {new Date(order.createdAt).toLocaleDateString()}
                 </td>
+
                 <td className="px-4 sm:px-6 py-4 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
-                  ${order.amount.toLocaleString()}
+                  ${order.total.toLocaleString()}
                 </td>
+
                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                  <StatusBadge status={order.status} />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    {order.paymentStatus}
+                  </span>
                 </td>
-                <td className="px-4 sm:px-6 py-4 text-end whitespace-nowrap">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => onEdit(order)}
-                      className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
-                      title="Edit"
+
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                  <div className="space-y-2">
+                    <StatusBadge status={order.status} />
+
+                    <select
+                      value={order.status}
+                      disabled={updatingOrderId === order.id}
+                      onChange={(event) =>
+                        onStatusChange(
+                          order.id,
+                          event.target.value as DatabaseOrderStatus,
+                        )
+                      }
+                      className="block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200 disabled:opacity-50"
                     >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (
-                          confirm(t("orders.deleteConfirm", { id: order.id }))
-                        ) {
-                          onDelete(order.id);
-                        }
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+
+                    {updatingOrderId === order.id && (
+                      <span className="text-xs text-slate-400">Saving...</span>
+                    )}
                   </div>
                 </td>
               </tr>

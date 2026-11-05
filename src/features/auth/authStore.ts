@@ -1,9 +1,11 @@
+
 import { create } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 
 interface AuthState {
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
@@ -12,6 +14,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>(() => ({
   isAuthenticated: false,
+  isAdmin: false,
   isLoading: true,
   user: null,
 
@@ -21,21 +24,69 @@ export const useAuthStore = create<AuthState>(() => ({
       password,
     });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   },
 
   logout: async () => {
     const { error } = await supabase.auth.signOut();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   },
 }));
 
 let authInitialized = false;
+let authCheckId = 0;
+
+async function syncAuth(user: User | null) {
+  const checkId = ++authCheckId;
+
+  if (!user) {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isAdmin: false,
+      isLoading: false,
+    });
+    return;
+  }
+
+  useAuthStore.setState({
+    user,
+    isAuthenticated: true,
+    isAdmin: false,
+    isLoading: true,
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (checkId !== authCheckId) return;
+
+    useAuthStore.setState({
+      user,
+      isAuthenticated: true,
+      isAdmin: data?.role === "admin",
+      isLoading: false,
+    });
+  } catch (error) {
+    console.error("Admin role verification failed:", error);
+
+    if (checkId !== authCheckId) return;
+
+    useAuthStore.setState({
+      user,
+      isAuthenticated: true,
+      isAdmin: false,
+      isLoading: false,
+    });
+  }
+}
 
 export function initializeAuth() {
   if (authInitialized) return;
@@ -43,20 +94,11 @@ export function initializeAuth() {
   authInitialized = true;
 
   supabase.auth.onAuthStateChange((_event, session) => {
-    useAuthStore.setState({
-      user: session?.user ?? null,
-      isAuthenticated: Boolean(session?.user),
-      isLoading: false,
-    });
-  });
+    const user = session?.user ?? null;
 
-  void supabase.auth.getSession().then(({ data, error }) => {
-    const user = error ? null : (data.session?.user ?? null);
-
-    useAuthStore.setState({
-      user,
-      isAuthenticated: Boolean(user),
-      isLoading: false,
-    });
+    // Run the profile query outside the auth callback.
+    setTimeout(() => {
+      void syncAuth(user);
+    }, 0);
   });
 }

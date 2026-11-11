@@ -3,10 +3,10 @@ import { ShoppingCart, DollarSign, Users, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatCard } from "../components/StatCard";
 import { calculateStats } from "../lib/stats";
-import { useOrdersStore } from "../features/orders/ordersStore";
 import { StatusDonut } from "../features/charts/StatusDonut";
 import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
+import { useAdminOrders } from "../features/orders/useAdminOrders";
 
 const HeroScene = lazy(() =>
   import("../features/three/HeroScene").then((m) => ({
@@ -16,7 +16,7 @@ const HeroScene = lazy(() =>
 
 export function Dashboard() {
   const { t } = useTranslation();
-  const orders = useOrdersStore((state) => state.orders);
+  const { orders, loading, error, refresh } = useAdminOrders();
   const stats = calculateStats(orders);
 
   return (
@@ -38,43 +38,54 @@ export function Dashboard() {
         </p>
       </div>
 
+      {loading && (
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Loading live order data...
+        </p>
+      )}
+      {error && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+          <span>Could not load dashboard orders: {error}</span>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="font-semibold underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title={t("dashboard.stats.totalOrders")}
           value={stats.totalOrders.toString()}
           icon={ShoppingCart}
-          trend={`+12% ${t("dashboard.stats.thisMonth")}`}
-          trendUp
         />
         <StatCard
           title={t("dashboard.stats.revenue")}
           value={`$${stats.totalRevenue.toLocaleString()}`}
           icon={DollarSign}
-          trend={`+8% ${t("dashboard.stats.thisMonth")}`}
-          trendUp
         />
         <StatCard
           title={t("dashboard.stats.uniqueCustomers")}
           value={stats.uniqueCustomers.toString()}
           icon={Users}
-          trend={t("dashboard.stats.newThisMonth")}
-          trendUp
         />
         <StatCard
           title={t("dashboard.stats.productsSold")}
           value={stats.totalProducts.toString()}
           icon={Package}
-          trend={`-2% ${t("dashboard.stats.thisMonth")}`}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <StatusDonut />
-        <RevenueArea />
+        <StatusDonut orders={orders} />
+        <RevenueArea orders={orders} />
       </div>
 
       <div className="grid grid-cols-1">
-        <MonthlyBars />
+        <MonthlyBars orders={orders} />
       </div>
     </div>
   );

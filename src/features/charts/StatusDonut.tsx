@@ -7,29 +7,39 @@ import {
   Legend,
 } from "recharts";
 import { useTranslation } from "react-i18next";
-import { useOrdersStore } from "../orders/ordersStore";
-import type { OrderStatus } from "../../types/order";
+import type { DatabaseOrder, DatabaseOrderStatus } from "../../types/databaseOrder";
 
-const STATUS_COLORS: Record<OrderStatus, string> = {
+const STATUS_COLORS: Record<DatabaseOrderStatus, string> = {
   delivered: "#ec4899",
   shipped: "#a855f7",
+  processing: "#6366f1",
   pending: "#f59e0b",
   cancelled: "#94a3b8",
 };
 
-export function StatusDonut() {
-  const { t } = useTranslation();
-  const orders = useOrdersStore((state) => state.orders);
+interface StatusDonutProps {
+  orders: DatabaseOrder[];
+}
 
-  const counts = orders.reduce<Record<OrderStatus, number>>(
+export function StatusDonut({ orders }: StatusDonutProps) {
+  const { t } = useTranslation();
+  const statuses: DatabaseOrderStatus[] = [
+    "pending",
+    "processing",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+
+  const counts = orders.reduce<Record<DatabaseOrderStatus, number>>(
     (acc, order) => {
-      acc[order.status] = (acc[order.status] ?? 0) + 1;
+      acc[order.status] += 1;
       return acc;
     },
-    { pending: 0, shipped: 0, delivered: 0, cancelled: 0 },
+    { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 },
   );
 
-  const data = (Object.keys(counts) as OrderStatus[]).map((status) => ({
+  const data = statuses.map((status) => ({
     name: t(`orders.status.${status}`),
     value: counts[status],
     color: STATUS_COLORS[status],

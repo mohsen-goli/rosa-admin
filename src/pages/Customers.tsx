@@ -1,22 +1,23 @@
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useOrdersStore } from "../features/orders/ordersStore";
 import { extractCustomers } from "../lib/customers";
 import { CustomersTable } from "../features/customers/CustomersTable";
+import { useAdminOrders } from "../features/orders/useAdminOrders";
 
 export function Customers() {
   const { t } = useTranslation();
-  const orders = useOrdersStore((state) => state.orders);
+  const { orders, loading, error, refresh } = useAdminOrders();
   const [search, setSearch] = useState("");
 
   const allCustomers = useMemo(() => extractCustomers(orders), [orders]);
 
   const filteredCustomers = useMemo(() => {
+    const normalizedSearch = search.toLowerCase().trim();
     return allCustomers.filter(
       (customer) =>
-        customer.name.toLowerCase().includes(search.toLowerCase()) ||
-        customer.email.toLowerCase().includes(search.toLowerCase()),
+        customer.name.toLowerCase().includes(normalizedSearch) ||
+        customer.email.toLowerCase().includes(normalizedSearch),
     );
   }, [allCustomers, search]);
 
@@ -24,8 +25,7 @@ export function Customers() {
     (sum, customer) => sum + customer.totalSpent,
     0,
   );
-
-  const vipCount = allCustomers.filter((c) => c.status === "vip").length;
+  const vipCount = allCustomers.filter((customer) => customer.status === "vip").length;
 
   return (
     <div className="space-y-6">
@@ -40,6 +40,24 @@ export function Customers() {
           })}
         </p>
       </div>
+
+      {loading && (
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Loading live customer data...
+        </p>
+      )}
+      {error && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+          <span>Could not load customers: {error}</span>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="font-semibold underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 transition-colors">
@@ -76,7 +94,7 @@ export function Customers() {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) => setSearch(event.target.value)}
           placeholder={t("customers.searchPlaceholder")}
           className="w-full ps-10 pe-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
         />

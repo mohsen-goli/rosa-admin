@@ -26,7 +26,9 @@ export function RevenueArea({ orders }: RevenueAreaProps) {
     };
   });
 
-  const monthMap = new Map(months.map((month) => [month.key, month]));
+  const monthMap = new Map<string, (typeof months)[number]>(
+    months.map((month) => [month.key, month] as const),
+  );
   orders.forEach((order) => {
     if (order.status === "cancelled" || order.paymentStatus !== "paid") return;
     const date = new Date(order.createdAt);

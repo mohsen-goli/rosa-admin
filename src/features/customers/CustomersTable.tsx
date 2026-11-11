@@ -58,7 +58,7 @@ export function CustomersTable({ customers }: CustomersTableProps) {
 
               return (
                 <tr
-                  key={customer.email}
+                  key={customer.id}
                   className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                 >
                   <td className="px-4 sm:px-6 py-4">
@@ -91,7 +91,7 @@ export function CustomersTable({ customers }: CustomersTableProps) {
                     ${customer.totalSpent.toLocaleString()}
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
-                    {customer.lastOrderDate}
+                    {new Date(customer.lastOrderDate).toLocaleDateString()}
                   </td>
                 </tr>
               );

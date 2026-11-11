@@ -42,9 +42,6 @@ export function Orders() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   async function fetchOrders() {
-    setLoading(true);
-    setError(null);
-
     const { data, error } = await supabase
       .from("orders")
       .select(
@@ -109,7 +106,14 @@ export function Orders() {
     setLoading(false);
   }
 
+  function handleRefresh() {
+    setLoading(true);
+    setError(null);
+    void fetchOrders();
+  }
   useEffect(() => {
+    // This effect starts an async request; state updates happen after the request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchOrders();
   }, []);
 
@@ -178,7 +182,7 @@ export function Orders() {
 
         <button
           type="button"
-          onClick={() => void fetchOrders()}
+          onClick={handleRefresh}
           disabled={loading}
           className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
         >

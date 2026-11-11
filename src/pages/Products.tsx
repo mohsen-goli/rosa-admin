@@ -129,6 +129,9 @@ export function Products() {
   }, []);
 
   useEffect(() => {
+    // Initial product loading is asynchronous.
+    // State updates happen as the request progresses.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadProducts();
   }, [loadProducts]);
 

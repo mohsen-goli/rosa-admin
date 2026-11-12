@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
@@ -7,15 +6,20 @@ interface AuthState {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLoading: boolean;
+  isRecoverySession: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+  clearRecoverySession: () => void;
 }
 
 export const useAuthStore = create<AuthState>(() => ({
   isAuthenticated: false,
   isAdmin: false,
   isLoading: true,
+  isRecoverySession: false,
   user: null,
 
   login: async (email, password) => {
@@ -31,6 +35,26 @@ export const useAuthStore = create<AuthState>(() => ({
     const { error } = await supabase.auth.signOut();
 
     if (error) throw error;
+  },
+
+  requestPasswordReset: async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: "https://rosa-admin.vercel.app/reset-password",
+    });
+
+    if (error) throw error;
+  },
+
+  updatePassword: async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) throw error;
+  },
+
+  clearRecoverySession: () => {
+    useAuthStore.setState({ isRecoverySession: false });
   },
 }));
 
@@ -93,10 +117,17 @@ export function initializeAuth() {
 
   authInitialized = true;
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      useAuthStore.setState({ isRecoverySession: true });
+    }
+
+    if (event === "SIGNED_OUT") {
+      useAuthStore.setState({ isRecoverySession: false });
+    }
+
     const user = session?.user ?? null;
 
-    // Run the profile query outside the auth callback.
     setTimeout(() => {
       void syncAuth(user);
     }, 0);

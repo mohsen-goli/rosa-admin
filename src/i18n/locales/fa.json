@@ -45,6 +45,7 @@
     "deleteConfirm": "حذف سفارش {{id}}؟",
     "status": {
       "pending": "در انتظار",
+      "processing": "در حال پردازش",
       "shipped": "ارسال‌شده",
       "delivered": "تحویل‌شده",
       "cancelled": "لغو شده"

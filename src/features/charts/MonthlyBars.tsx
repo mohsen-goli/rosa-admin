@@ -8,18 +8,34 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useTranslation } from "react-i18next";
+import type { DatabaseOrder } from "../../types/databaseOrder";
 
-const data = [
-  { month: "Apr", orders: 12 },
-  { month: "May", orders: 19 },
-  { month: "Jun", orders: 15 },
-  { month: "Jul", orders: 25 },
-  { month: "Aug", orders: 22 },
-  { month: "Sep", orders: 31 },
-];
+interface MonthlyBarsProps {
+  orders: DatabaseOrder[];
+}
 
-export function MonthlyBars() {
+export function MonthlyBars({ orders }: MonthlyBarsProps) {
   const { t } = useTranslation();
+  const now = new Date();
+  const months = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+    return {
+      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+      month: date.toLocaleDateString(undefined, { month: "short" }),
+      orders: 0,
+    };
+  });
+
+  const monthMap = new Map<string, (typeof months)[number]>(
+    months.map((month) => [month.key, month] as const),
+  );
+  orders.forEach((order) => {
+    if (order.status === "cancelled") return;
+    const date = new Date(order.createdAt);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const month = monthMap.get(key);
+    if (month) month.orders += 1;
+  });
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 transition-colors">
@@ -27,8 +43,8 @@ export function MonthlyBars() {
         {t("dashboard.charts.monthlyOrders")}
       </h3>
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <BarChart data={months}>
+          <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
           <YAxis stroke="#94a3b8" fontSize={12} />
           <Tooltip />

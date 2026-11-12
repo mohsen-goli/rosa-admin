@@ -1,6 +1,7 @@
-import type { Order } from "../types/order";
+import type { DatabaseOrder } from "../types/databaseOrder";
 
 export interface Customer {
+  id: string;
   email: string;
   name: string;
   totalOrders: number;
@@ -9,26 +10,31 @@ export interface Customer {
   status: "vip" | "regular" | "new";
 }
 
-export function extractCustomers(orders: Order[]): Customer[] {
+export function extractCustomers(orders: DatabaseOrder[]): Customer[] {
   const map = new Map<string, Customer>();
 
   orders.forEach((order) => {
-    const existing = map.get(order.customerEmail);
+    const email = order.customerEmail?.trim().toLowerCase() ?? "";
+    const phone = order.customerPhone?.trim() ?? "";
+    const key = email || phone || order.id;
+    const existing = map.get(key);
+    const isRevenueOrder =
+      order.status !== "cancelled" && order.paymentStatus === "paid";
 
     if (existing) {
       existing.totalOrders += 1;
-      existing.totalSpent += order.amount;
-
-      if (order.date > existing.lastOrderDate) {
-        existing.lastOrderDate = order.date;
+      if (isRevenueOrder) existing.totalSpent += order.total;
+      if (order.createdAt > existing.lastOrderDate) {
+        existing.lastOrderDate = order.createdAt;
       }
     } else {
-      map.set(order.customerEmail, {
-        email: order.customerEmail,
+      map.set(key, {
+        id: key,
+        email: order.customerEmail?.trim() || phone || "No contact",
         name: order.customerName,
         totalOrders: 1,
-        totalSpent: order.amount,
-        lastOrderDate: order.date,
+        totalSpent: isRevenueOrder ? order.total : 0,
+        lastOrderDate: order.createdAt,
         status: "new",
       });
     }

@@ -9,18 +9,29 @@ import { initializeAuth } from "./features/auth/authStore";
 const Login = lazy(() =>
   import("./pages/Login").then((m) => ({ default: m.Login })),
 );
+
+const ResetPassword = lazy(() =>
+  import("./pages/ResetPassword").then((m) => ({
+    default: m.ResetPassword,
+  })),
+);
+
 const Dashboard = lazy(() =>
   import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
 );
+
 const Orders = lazy(() =>
   import("./pages/Orders").then((m) => ({ default: m.Orders })),
 );
+
 const Products = lazy(() =>
   import("./pages/Products").then((m) => ({ default: m.Products })),
 );
+
 const Customers = lazy(() =>
   import("./pages/Customers").then((m) => ({ default: m.Customers })),
 );
+
 const Settings = lazy(() =>
   import("./pages/Settings").then((m) => ({ default: m.Settings })),
 );
@@ -51,6 +62,8 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route
             path="/"

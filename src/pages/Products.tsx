@@ -4,8 +4,9 @@ import {
   useEffect,
   useCallback,
   type FormEvent,
+  type ChangeEvent,
 } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import type { ProductCategory } from "../types/product";
@@ -30,6 +31,10 @@ interface ProductForm {
   category: ProductCategory;
   imageUrl: string;
 }
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const categoryColors: Record<ProductCategory, string> = {
   lipstick: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
@@ -61,6 +66,67 @@ const emptyForm: ProductForm = {
   imageUrl: "",
 };
 
+// Read local image for preview.
+const readImagePreview = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Could not preview the selected image."));
+      }
+    };
+
+    reader.onerror = () =>
+      reject(new Error("Could not read the selected image."));
+
+    reader.readAsDataURL(file);
+  });
+
+// Upload image to Supabase Storage and return its public URL.
+const uploadProductImage = async (file: File): Promise<string> => {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error("Please select a JPG, PNG or WebP image.");
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    throw new Error("Image size must be less than 5 MB.");
+  }
+
+  const extension =
+    file.type === "image/jpeg"
+      ? "jpg"
+      : file.type === "image/png"
+        ? "png"
+        : "webp";
+
+  const filePath = `products/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("products")
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data } = supabase.storage.from("products").getPublicUrl(filePath);
+
+  if (!data.publicUrl) {
+    throw new Error("Could not get the uploaded image URL.");
+  }
+
+  return data.publicUrl;
+};
+
 export function Products() {
   const { t } = useTranslation();
 
@@ -79,6 +145,12 @@ export function Products() {
 
   const [editForm, setEditForm] = useState<ProductForm>(emptyForm);
   const [addForm, setAddForm] = useState<ProductForm>(emptyForm);
+
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [addImageFile, setAddImageFile] = useState<File | null>(null);
+
+  const [editImagePreview, setEditImagePreview] = useState("");
+  const [addImagePreview, setAddImagePreview] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -130,7 +202,6 @@ export function Products() {
 
   useEffect(() => {
     // Initial product loading is asynchronous.
-    // State updates happen as the request progresses.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadProducts();
   }, [loadProducts]);
@@ -147,6 +218,8 @@ export function Products() {
       imageUrl: product.imageUrl,
     });
 
+    setEditImageFile(null);
+    setEditImagePreview("");
     setSaveError("");
   };
 
@@ -167,6 +240,64 @@ export function Products() {
     return { price, stock };
   };
 
+  const handleEditImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setSaveError("Please select a JPG, PNG or WebP image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setSaveError("Image size must be less than 5 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const preview = await readImagePreview(file);
+      setEditImageFile(file);
+      setEditImagePreview(preview);
+      setSaveError("");
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Could not preview image.",
+      );
+    }
+  };
+
+  const handleAddImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setSaveError("Please select a JPG, PNG or WebP image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setSaveError("Image size must be less than 5 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const preview = await readImagePreview(file);
+      setAddImageFile(file);
+      setAddImagePreview(preview);
+      setSaveError("");
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Could not preview image.",
+      );
+    }
+  };
+
   const handleSaveProduct = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -179,8 +310,8 @@ export function Products() {
       return;
     }
 
-    if (!editForm.imageUrl.trim()) {
-      setSaveError("Please enter a product image URL.");
+    if (!editImageFile && !editForm.imageUrl.trim()) {
+      setSaveError("Please select a product image or enter an image URL.");
       return;
     }
 
@@ -188,6 +319,12 @@ export function Products() {
     setSaveError("");
 
     try {
+      // Upload new image only if one was selected.
+      // Otherwise, keep the existing image URL.
+      const imageUrl = editImageFile
+        ? await uploadProductImage(editImageFile)
+        : editForm.imageUrl.trim();
+
       const { error: updateError } = await supabase
         .from("products")
         .update({
@@ -196,7 +333,7 @@ export function Products() {
           price: values.price,
           stock: values.stock,
           category: editForm.category,
-          image_url: editForm.imageUrl.trim(),
+          image_url: imageUrl,
         })
         .eq("id", editingProduct.id);
 
@@ -204,6 +341,8 @@ export function Products() {
 
       await loadProducts();
       setEditingProduct(null);
+      setEditImageFile(null);
+      setEditImagePreview("");
     } catch (err) {
       console.error("Failed to update product:", err);
       setSaveError(
@@ -226,8 +365,8 @@ export function Products() {
       return;
     }
 
-    if (!addForm.imageUrl.trim()) {
-      setSaveError("Please enter a product image URL.");
+    if (!addImageFile && !addForm.imageUrl.trim()) {
+      setSaveError("Please select a product image or enter an image URL.");
       return;
     }
 
@@ -235,20 +374,28 @@ export function Products() {
     setSaveError("");
 
     try {
+      // Upload image first, then save its public URL.
+      const imageUrl = addImageFile
+        ? await uploadProductImage(addImageFile)
+        : addForm.imageUrl.trim();
+
       const { error: insertError } = await supabase.from("products").insert({
         name: addForm.name.trim(),
         description: addForm.description.trim(),
         price: values.price,
         stock: values.stock,
         category: addForm.category,
-        image_url: addForm.imageUrl.trim(),
+        image_url: imageUrl,
         is_active: true,
       });
 
       if (insertError) throw insertError;
 
       await loadProducts();
+
       setAddForm(emptyForm);
+      setAddImageFile(null);
+      setAddImagePreview("");
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Failed to create product:", err);
@@ -311,6 +458,8 @@ export function Products() {
   const closeEditModal = () => {
     if (isSaving) return;
     setEditingProduct(null);
+    setEditImageFile(null);
+    setEditImagePreview("");
     setSaveError("");
   };
 
@@ -318,6 +467,8 @@ export function Products() {
     if (isSaving) return;
     setIsAddModalOpen(false);
     setAddForm(emptyForm);
+    setAddImageFile(null);
+    setAddImagePreview("");
     setSaveError("");
   };
 
@@ -342,6 +493,8 @@ export function Products() {
           onClick={() => {
             setSaveError("");
             setAddForm(emptyForm);
+            setAddImageFile(null);
+            setAddImagePreview("");
             setIsAddModalOpen(true);
           }}
           className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium"
@@ -607,30 +760,120 @@ export function Products() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
-                  Product image URL
+              {/* Product image upload */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                  Product image
                 </label>
-                <input
-                  className={inputClass}
-                  type="url"
-                  placeholder="https://example.com/product.jpg"
-                  value={editingProduct ? editForm.imageUrl : addForm.imageUrl}
-                  onChange={(e) =>
-                    editingProduct
-                      ? setEditForm({ ...editForm, imageUrl: e.target.value })
-                      : setAddForm({ ...addForm, imageUrl: e.target.value })
-                  }
-                  required
-                />
 
-                {(editingProduct ? editForm.imageUrl : addForm.imageUrl) && (
-                  <img
-                    src={editingProduct ? editForm.imageUrl : addForm.imageUrl}
-                    alt="Product preview"
-                    className="mt-3 w-24 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                <label className="flex flex-col items-center justify-center gap-2 w-full p-5 border-2 border-dashed border-pink-300 dark:border-pink-500/40 rounded-xl cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-500/5 transition-colors">
+                  <Upload size={25} className="text-pink-500" />
+
+                  <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
+                    Choose image from computer
+                  </span>
+
+                  <span className="text-xs text-slate-400">
+                    JPG, PNG or WebP · Maximum 5 MB
+                  </span>
+
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={
+                      editingProduct
+                        ? handleEditImageChange
+                        : handleAddImageChange
+                    }
+                    disabled={isSaving}
                   />
+                </label>
+
+                {(editingProduct ? editImagePreview : addImagePreview) ? (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
+                    <img
+                      src={editingProduct ? editImagePreview : addImagePreview}
+                      alt="Selected product"
+                      className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        New image selected
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1 truncate">
+                        {editingProduct
+                          ? editImageFile?.name
+                          : addImageFile?.name}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => {
+                        if (editingProduct) {
+                          setEditImageFile(null);
+                          setEditImagePreview("");
+                        } else {
+                          setAddImageFile(null);
+                          setAddImagePreview("");
+                        }
+                      }}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
+                      aria-label="Remove selected image"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  (editingProduct ? editForm.imageUrl : addForm.imageUrl) && (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={
+                          editingProduct ? editForm.imageUrl : addForm.imageUrl
+                        }
+                        alt="Current product"
+                        className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                      />
+                      <span className="text-xs text-slate-500">
+                        Current product image
+                      </span>
+                    </div>
+                  )
                 )}
+
+                <div>
+                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                    Or paste an image URL
+                  </label>
+
+                  <input
+                    className={inputClass}
+                    type="url"
+                    placeholder="https://example.com/product.jpg"
+                    value={
+                      editingProduct ? editForm.imageUrl : addForm.imageUrl
+                    }
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditForm({
+                            ...editForm,
+                            imageUrl: e.target.value,
+                          })
+                        : setAddForm({
+                            ...addForm,
+                            imageUrl: e.target.value,
+                          })
+                    }
+                  />
+
+                  <p className="text-xs text-slate-400 mt-1">
+                    If you select a local image, it will be used instead of this
+                    URL.
+                  </p>
+                </div>
               </div>
 
               {saveError && (

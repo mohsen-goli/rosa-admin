@@ -18,13 +18,14 @@ export interface DatabaseOrderItem {
 
 export interface DatabaseOrder {
   id: string;
-  orderNumber: number;
+  orderCode: string;
   customerName: string;
   customerEmail: string | null;
   customerPhone: string | null;
   shippingAddress: string;
   status: DatabaseOrderStatus;
   paymentStatus: PaymentStatus;
+  currency: "IRR" | "USD";
   subtotal: number;
   shippingFee: number;
   total: number;

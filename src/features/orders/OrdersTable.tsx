@@ -69,7 +69,7 @@ export function OrdersTable({
                 className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
                 <td className="px-4 sm:px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">
-                  #{order.orderNumber}
+                  #{order.orderCode}
                 </td>
 
                 <td className="px-4 sm:px-6 py-4">
@@ -99,7 +99,7 @@ export function OrdersTable({
                 </td>
 
                 <td className="px-4 sm:px-6 py-4 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
-                  ${order.total.toLocaleString()}
+                  ${new Intl.NumberFormat("en-US", { style: "currency", currency: order.currency, maximumFractionDigits: order.currency === "USD" ? 2 : 0 }).format(order.total / (order.currency === "USD" ? 100 : 1))}
                 </td>
 
                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap">

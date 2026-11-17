@@ -99,7 +99,7 @@ export function OrdersTable({
                 </td>
 
                 <td className="px-4 sm:px-6 py-4 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
-                  ${new Intl.NumberFormat("en-US", { style: "currency", currency: order.currency, maximumFractionDigits: order.currency === "USD" ? 2 : 0 }).format(order.total / (order.currency === "USD" ? 100 : 1))}
+                  {new Intl.NumberFormat("en-US", { style: "currency", currency: order.currency, maximumFractionDigits: order.currency === "USD" ? 2 : 0 }).format(order.total / (order.currency === "USD" ? 100 : 1))}
                 </td>
 
                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap">

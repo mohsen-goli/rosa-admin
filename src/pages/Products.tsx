@@ -89,10 +89,8 @@ export function Products() {
   const [imagePreview, setImagePreview] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-  // Preview currently shares the live Supabase project. Require an explicit
-  // Production-only opt-in before allowing writes to that database.
-  const isLiveDatabase = import.meta.env.VITE_SUPABASE_URL === "https://rilwptahhvipusiwfjks.supabase.co";
-  const canWriteProducts = !isLiveDatabase || import.meta.env.VITE_ALLOW_LIVE_PRODUCT_WRITES === "true";
+  // The user explicitly approved product management against the connected ROSA Supabase project.
+  const canWriteProducts = true;
 
   const loadProducts = useCallback(async () => {
     setIsLoading(true); setError("");

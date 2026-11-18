@@ -60,8 +60,8 @@ export function Reviews() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
           <time className="text-xs text-slate-400">{new Date(item.created_at).toLocaleString(language === "fa" ? "fa-IR" : "en-US")}</time>
           {item.status === "pending" && <div className="flex gap-2">
-            <button onClick={() => void moderate(item.id, "approved")} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"><Check size={14}/>{t.approve}</button>
-            <button onClick={() => void moderate(item.id, "rejected")} className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700"><X size={14}/>{t.reject}</button>
+            <button type="button" onClick={() => void moderate(item.id, "approved")} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"><Check size={14}/>{t.approve}</button>
+            <button type="button" onClick={() => void moderate(item.id, "rejected")} className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700"><X size={14}/>{t.reject}</button>
           </div>}
         </div>
       </article>)}</div>}

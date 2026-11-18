@@ -13,7 +13,7 @@ export interface Customer {
 export function extractCustomers(orders: DatabaseOrder[]): Customer[] {
   const map = new Map<string, Customer>();
   for (const order of orders) {
-    const key = order.customerEmail?.trim().toLowerCase() || order.userId || \`guest:\${order.id}\`;
+    const key = order.customerEmail?.trim().toLowerCase() || order.userId || `guest:${order.id}`;
     const existing = map.get(key);
     if (existing) {
       existing.totalOrders += 1;

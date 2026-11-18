@@ -78,11 +78,11 @@ export function useDatabaseOrders() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from("orders")
-      .select(\`
+      .select(`
         id, user_id, code, currency, status, subtotal, shipping, total,
         customer, created_at,
         order_items (id, product_id, product_snapshot, unit_price, quantity, line_total)
-      \`)
+      `)
       .order("created_at", { ascending: false });
 
     if (queryError) {

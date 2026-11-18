@@ -21,7 +21,7 @@ export function Orders() {
       p_order_id: orderId,
       p_status: newStatus,
     });
-    if (updateError) setActionError(\`Could not update order status: \${updateError.message}\`);
+    if (updateError) setActionError(`Could not update order status: ${updateError.message}`);
     else await refresh();
     setUpdatingOrderId(null);
   }

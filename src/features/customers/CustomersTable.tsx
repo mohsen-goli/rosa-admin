@@ -34,7 +34,7 @@ export function CustomersTable({ customers }: CustomersTableProps) {
                 <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-500/20 flex items-center justify-center text-pink-600 dark:text-pink-400 font-bold shrink-0">{customer.name[0]?.toUpperCase() ?? "?"}</div>
                 <div className="min-w-0"><div className="font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">{customer.name}</div><div className="text-xs text-slate-400 dark:text-slate-500">{customer.email}</div></div>
               </div></td>
-              <td className="px-4 sm:px-6 py-4"><span className={\`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium \${statusStyles[customer.status]}\`}><Icon size={12} />{t(\`customers.status.\${customer.status}\`)}</span></td>
+              <td className="px-4 sm:px-6 py-4"><span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[customer.status]}`}><Icon size={12} />{t(`customers.status.${customer.status}`)}</span></td>
               <td className="px-4 sm:px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">{customer.totalOrders}</td>
               <td className="px-4 sm:px-6 py-4 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap">
                 {customer.spentByCurrency.IRR > 0 && <div>{money(customer.spentByCurrency.IRR, "IRR")}</div>}

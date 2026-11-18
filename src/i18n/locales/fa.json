@@ -4,7 +4,8 @@
     "orders": "سفارش‌ها",
     "products": "محصولات",
     "customers": "مشتریان",
-    "settings": "تنظیمات"
+    "settings": "تنظیمات",
+    "reviews": "نظرات"
   },
   "auth": {
     "welcomeBackUser": "خوش آمدی، {{email}}",

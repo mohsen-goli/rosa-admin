@@ -13,7 +13,7 @@ interface ProductVariant {
 }
 interface AdminProduct {
   id: string; slug: string; brandId: string; brandName: string; category: ProductCategory;
-  isActive: boolean; rating: number | null; imageUrl: string; translations: TranslationForm;
+  isActive: boolean; rating: number | null; imageUrl: string; imageId: string | null; translations: TranslationForm;
   variants: ProductVariant[];
 }
 interface ProductForm {
@@ -128,7 +128,7 @@ export function Products() {
           id: row.id, slug: row.slug ?? "", brandId: row.brand_id ?? "", brandName: brand?.name ?? "",
           category: (row.category in categoryColors ? row.category : "makeup") as ProductCategory,
           isActive: Boolean(row.is_active), rating: row.rating === null ? null : Number(row.rating),
-          imageUrl: image?.image_url ?? "", translations, variants,
+          imageUrl: image?.image_url ?? "", imageId: image?.id ?? null, translations, variants,
         };
       });
       setProducts(mapped);
@@ -236,12 +236,17 @@ export function Products() {
         : await supabase.from("product_variants").insert({ product_id: productId!, ...variantPayload });
       if (variantResult.error) throw variantResult.error;
 
-      const { error: clearPrimaryError } = await supabase.from("product_images").update({ is_primary: false }).eq("product_id", productId!);
-      if (clearPrimaryError) throw clearPrimaryError;
-      const { error: imageInsertError } = await supabase.from("product_images").insert({
-        product_id: productId!, image_url: imageUrl, is_primary: true, sort_order: 0,
-      });
-      if (imageInsertError) throw imageInsertError;
+      if (editingProduct?.imageId) {
+        const { error: imageUpdateError } = await supabase.from("product_images")
+          .update({ image_url: imageUrl, is_primary: true, sort_order: 0 })
+          .eq("id", editingProduct.imageId);
+        if (imageUpdateError) throw imageUpdateError;
+      } else {
+        const { error: imageInsertError } = await supabase.from("product_images").insert({
+          product_id: productId!, image_url: imageUrl, is_primary: true, sort_order: 0,
+        });
+        if (imageInsertError) throw imageInsertError;
+      }
 
       await loadProducts();
       resetModal();

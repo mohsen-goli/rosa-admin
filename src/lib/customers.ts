@@ -32,8 +32,19 @@ export function extractCustomers(orders: DatabaseOrder[]): Customer[] {
       });
     }
   }
-  return [...map.values()].map((customer) => ({
-    ...customer,
-    status: customer.totalOrders >= 5 ? "vip" : customer.totalOrders >= 2 ? "regular" : "new",
-  })).sort((a, b) => b.totalOrders - a.totalOrders);
+  return [...map.values()]
+    .map((customer): Customer => {
+      const status: Customer["status"] =
+        customer.totalOrders >= 5
+          ? "vip"
+          : customer.totalOrders >= 2
+            ? "regular"
+            : "new";
+
+      return {
+        ...customer,
+        status,
+      };
+    })
+    .sort((a, b) => b.totalOrders - a.totalOrders);
 }

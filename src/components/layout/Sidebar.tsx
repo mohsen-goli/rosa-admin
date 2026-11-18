@@ -7,6 +7,7 @@ import {
   Users,
   Package,
   Settings,
+  Star,
 } from "lucide-react";
 import { useLanguageStore } from "../../features/language/languageStore";
 
@@ -20,6 +21,7 @@ const navItems = [
   { icon: ShoppingCart, labelKey: "nav.orders", href: "/orders" },
   { icon: Package, labelKey: "nav.products", href: "/products" },
   { icon: Users, labelKey: "nav.customers", href: "/customers" },
+  { icon: Star, labelKey: "nav.reviews", href: "/reviews" },
   { icon: Settings, labelKey: "nav.settings", href: "/settings" },
 ];
 
@@ -85,7 +87,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }
               >
                 <Icon size={20} />
-                <span>{t(item.labelKey)}</span>
+                <span>{item.labelKey === "nav.reviews" ? (language === "fa" ? "نظرات" : "Reviews") : t(item.labelKey)}</span>
               </NavLink>
             );
           })}

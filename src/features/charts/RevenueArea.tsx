@@ -8,7 +8,7 @@ export function RevenueArea({ orders }: Props) {
   const now = new Date();
   const months = Array.from({ length: 6 }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
-    const key = \`\${date.getFullYear()}-\${String(date.getMonth() + 1).padStart(2, "0")}\`;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const revenue = orders.filter((order) => order.currency === "IRR" && order.status !== "cancelled" && order.createdAt.slice(0, 7) === key)
       .reduce((sum, order) => sum + order.total, 0);
     return { month: date.toLocaleDateString(undefined, { month: "short" }), revenue };

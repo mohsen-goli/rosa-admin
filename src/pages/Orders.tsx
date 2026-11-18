@@ -4,6 +4,25 @@ import { OrdersTable } from "../features/orders/OrdersTable";
 import { supabase } from "../lib/supabase";
 import type { DatabaseOrder, DatabaseOrderStatus } from "../types/databaseOrder";
 
+function getSnapshotProductName(title: unknown): string | undefined {
+  if (typeof title === "string" && title.trim()) return title;
+  if (!title || typeof title !== "object") return undefined;
+
+  const translations = title as Record<string, unknown>;
+  for (const locale of ["fa", "en", "ar"]) {
+    const localized = translations[locale];
+    if (typeof localized === "string" && localized.trim()) return localized;
+
+    if (localized && typeof localized === "object") {
+      const localizedTitle = (localized as Record<string, unknown>).title;
+      if (typeof localizedTitle === "string" && localizedTitle.trim()) {
+        return localizedTitle;
+      }
+    }
+  }
+  return undefined;
+}
+
 interface OrderRow {
   id: string;
   code: string;
@@ -27,7 +46,7 @@ interface OrderRow {
     id: string;
     product_id: string | null;
     product_snapshot: {
-      title?: { fa?: string; en?: string; ar?: string };
+      title?: unknown;
       brand?: string;
       variant?: { name?: string; title?: string } | null;
     } | null;
@@ -83,11 +102,7 @@ export function Orders() {
         id: item.id,
         productId: item.product_id,
         productName:
-          (typeof item.product_snapshot?.title === "string"
-            ? item.product_snapshot.title
-            : item.product_snapshot?.title?.fa ??
-              item.product_snapshot?.title?.en ??
-              item.product_snapshot?.title?.ar) ??
+          getSnapshotProductName(item.product_snapshot?.title) ??
           item.product_snapshot?.brand ??
           item.product_id ??
           "Product",

@@ -89,6 +89,10 @@ export function Products() {
   const [imagePreview, setImagePreview] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  // Preview currently shares the live Supabase project. Require an explicit
+  // Production-only opt-in before allowing writes to that database.
+  const isLiveDatabase = import.meta.env.VITE_SUPABASE_URL === "https://rilwptahhvipusiwfjks.supabase.co";
+  const canWriteProducts = !isLiveDatabase || import.meta.env.VITE_ALLOW_LIVE_PRODUCT_WRITES === "true";
 
   const loadProducts = useCallback(async () => {
     setIsLoading(true); setError("");
@@ -182,6 +186,10 @@ export function Products() {
 
   const saveProduct = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canWriteProducts) {
+      setSaveError("Product changes are disabled in Preview because it is connected to the live store database.");
+      return;
+    }
     const enTitle = form.translations.en.title.trim();
     const faTitle = form.translations.fa.title.trim();
     const sku = form.sku.trim();
@@ -257,6 +265,10 @@ export function Products() {
   };
 
   const toggleActive = async (product: AdminProduct) => {
+    if (!canWriteProducts) {
+      setError("Product activation changes are disabled in Preview while it shares the live store database.");
+      return;
+    }
     const action = product.isActive ? "deactivate" : "activate";
     if (product.isActive && !window.confirm("Deactivate this product? It will be hidden from the store but kept in the database and order history.")) return;
     try {
@@ -275,12 +287,13 @@ export function Products() {
   const modalOpen = Boolean(editingProduct) || isAddOpen;
   return (
     <div className="space-y-6">
+      {!canWriteProducts && <p className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 p-3 text-xs text-amber-800 dark:text-amber-300">Preview is read-only because it uses the live ROSA database. Product editing will be enabled in Production only after an explicit environment setting.</p>}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t("products.title")}</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">{t("products.count", { filtered: filteredProducts.length, total: products.length })}</p></div>
         <div className="flex gap-2">
           <button type="button" onClick={() => void loadProducts()} disabled={isLoading} className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-300 disabled:opacity-50"><RefreshCw size={16} className={isLoading ? "animate-spin" : ""}/>Refresh</button>
-          <button type="button" onClick={openAdd} className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium"><Plus size={16}/>{t("products.addProduct")}</button>
+          <button type="button" onClick={openAdd} disabled={!canWriteProducts} title={!canWriteProducts ? "Preview is connected to the live database; writes are disabled." : undefined} className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"><Plus size={16}/>{t("products.addProduct")}</button>
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
@@ -305,8 +318,8 @@ export function Products() {
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2"><div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{variant?.price_usd_cents != null ? formatPrice(variant.price_usd_cents, "USD") : formatPrice(variant?.price_irr ?? null, "IRR")}</p>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] mt-1 ${stockBadge.className}`}>{stockBadge.label}</span></div>
-              <div className="flex flex-col gap-2 items-end"><button onClick={() => openEdit(product)} className="flex items-center gap-1 text-xs text-pink-500 font-medium"><Pencil size={13}/>Edit</button>
-                <button onClick={() => void toggleActive(product)} className={`flex items-center gap-1 text-xs ${product.isActive ? "text-red-500" : "text-green-600"}`}><Power size={13}/>{product.isActive ? "Deactivate" : "Activate"}</button></div></div>
+              <div className="flex flex-col gap-2 items-end"><button onClick={() => openEdit(product)} disabled={!canWriteProducts} className="flex items-center gap-1 text-xs text-pink-500 font-medium disabled:opacity-40 disabled:cursor-not-allowed"><Pencil size={13}/>Edit</button>
+                <button onClick={() => void toggleActive(product)} disabled={!canWriteProducts} className={`flex items-center gap-1 text-xs ${product.isActive ? "text-red-500" : "text-green-600"} disabled:opacity-40 disabled:cursor-not-allowed`}><Power size={13}/>{product.isActive ? "Deactivate" : "Activate"}</button></div></div>
             <p className="text-[10px] text-slate-400 mt-3">{product.slug}</p>
           </div>;
         })}
@@ -341,7 +354,7 @@ export function Products() {
             {editingProduct && editingProduct.variants.length > 1 && <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-500/10 p-3 rounded-lg">This product has multiple active variants. The current editor changes the first variant only; other variants are preserved.</p>}
             {saveError && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg">{saveError}</p>}
             <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={resetModal} disabled={isSaving} className="px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-300">Cancel</button>
-              <button type="submit" disabled={isSaving} className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60">{isSaving ? "Saving..." : editingProduct ? "Save changes" : "Add product"}</button></div>
+              <button type="submit" disabled={isSaving || !canWriteProducts} className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60">{isSaving ? "Saving..." : editingProduct ? "Save changes" : "Add product"}</button></div>
           </form>
         </div>
       </div>}

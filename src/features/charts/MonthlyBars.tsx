@@ -8,7 +8,7 @@ export function MonthlyBars({ orders }: Props) {
   const now = new Date();
   const data = Array.from({ length: 6 }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
-    const key = \`\${date.getFullYear()}-\${String(date.getMonth() + 1).padStart(2, "0")}\`;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     return { month: date.toLocaleDateString(undefined, { month: "short" }), orders: orders.filter((order) => order.createdAt.slice(0, 7) === key).length };
   });
   return <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 transition-colors">

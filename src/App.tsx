@@ -6,54 +6,23 @@ import { Layout } from "./components/layout/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { initializeAuth } from "./features/auth/authStore";
 
-const Login = lazy(() =>
-  import("./pages/Login").then((m) => ({ default: m.Login })),
-);
-
-const ResetPassword = lazy(() =>
-  import("./pages/ResetPassword").then((m) => ({
-    default: m.ResetPassword,
-  })),
-);
-
-const Dashboard = lazy(() =>
-  import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
-);
-
-const Orders = lazy(() =>
-  import("./pages/Orders").then((m) => ({ default: m.Orders })),
-);
-
-const Products = lazy(() =>
-  import("./pages/Products").then((m) => ({ default: m.Products })),
-);
-
-const Reviews = lazy(() =>
-  import("./pages/Reviews").then((m) => ({ default: m.Reviews })),
-);
-
-const Customers = lazy(() =>
-  import("./pages/Customers").then((m) => ({ default: m.Customers })),
-);
-
-const Settings = lazy(() =>
-  import("./pages/Settings").then((m) => ({ default: m.Settings })),
-);
+const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
+const ResetPassword = lazy(() => import("./pages/ResetPassword").then((m) => ({ default: m.ResetPassword })));
+const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const Orders = lazy(() => import("./pages/Orders").then((m) => ({ default: m.Orders })));
+const Products = lazy(() => import("./pages/Products").then((m) => ({ default: m.Products })));
+const Reviews = lazy(() => import("./pages/Reviews").then((m) => ({ default: m.Reviews })));
+const Feedback = lazy(() => import("./pages/Feedback").then((m) => ({ default: m.Feedback })));
+const Customers = lazy(() => import("./pages/Customers").then((m) => ({ default: m.Customers })));
+const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m.Settings })));
 
 function AuthInitializer() {
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
+  useEffect(() => { initializeAuth(); }, []);
   return null;
 }
 
 function PageLoader() {
-  return (
-    <div className="flex items-center justify-center p-12">
-      <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  return <div className="flex items-center justify-center p-12"><div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" /></div>;
 }
 
 function App() {
@@ -62,26 +31,17 @@ function App() {
       <AuthInitializer />
       <ThemeApplier />
       <LanguageApplier />
-
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
-
           <Route path="/reset-password" element={<ResetPassword />} />
-
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<Orders />} />
             <Route path="products" element={<Products />} />
             <Route path="customers" element={<Customers />} />
             <Route path="reviews" element={<Reviews />} />
+            <Route path="feedback" element={<Feedback />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

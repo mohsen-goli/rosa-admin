@@ -1,12 +1,5 @@
-import {
-  useState,
-  useMemo,
-  useEffect,
-  useCallback,
-  type FormEvent,
-  type ChangeEvent,
-} from "react";
-import { Search, Plus, X, Upload } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Search, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import type { ProductCategory } from "../types/product";
@@ -14,35 +7,23 @@ import type { ProductCategory } from "../types/product";
 interface AdminProduct {
   id: string;
   name: string;
+  description: string;
+  brandName: string;
   category: ProductCategory;
-  price: number;
+  priceIrr: number | null;
+  priceUsdCents: number | null;
   stock: number;
-  description: string;
   imageUrl: string;
-  emoji: string;
   isActive: boolean;
+  rating: number | null;
+  slug: string;
 }
-
-interface ProductForm {
-  name: string;
-  description: string;
-  price: string;
-  stock: string;
-  category: ProductCategory;
-  imageUrl: string;
-}
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const categoryColors: Record<ProductCategory, string> = {
   lipstick: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
   skincare: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
-  perfume:
-    "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400",
-  haircare:
-    "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+  perfume: "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400",
+  haircare: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
   makeup: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
 };
 
@@ -54,381 +35,116 @@ const categoryEmojis: Record<ProductCategory, string> = {
   makeup: "💋",
 };
 
-const inputClass =
-  "w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500";
-
-const emptyForm: ProductForm = {
-  name: "",
-  description: "",
-  price: "",
-  stock: "",
-  category: "skincare",
-  imageUrl: "",
-};
-
-// Supabase/PostgREST errors are not always preserved as native Error instances.
 const getReadableError = (error: unknown): string => {
   if (error instanceof Error && error.message) return error.message;
-
   if (typeof error === "object" && error !== null) {
-    const value = error as {
-      message?: unknown;
-      details?: unknown;
-      hint?: unknown;
-      code?: unknown;
-    };
+    const value = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
     const parts = [value.message, value.details, value.hint]
       .filter((part): part is string => typeof part === "string" && part.length > 0);
-    if (parts.length > 0) {
-      return [value.code, ...parts]
-        .filter((part): part is string => typeof part === "string" && part.length > 0)
-        .join(" — ");
-    }
+    if (parts.length) return [value.code, ...parts]
+      .filter((part): part is string => typeof part === "string" && part.length > 0)
+      .join(" — ");
   }
-
-  return typeof error === "string" && error.length > 0
-    ? error
-    : "Could not load products. Please try again.";
+  return typeof error === "string" && error ? error : "Could not load products. Please try again.";
 };
 
-// Read local image for preview.
-const readImagePreview = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error("Could not preview the selected image."));
-      }
-    };
-
-    reader.onerror = () =>
-      reject(new Error("Could not read the selected image."));
-
-    reader.readAsDataURL(file);
-  });
-
-// Upload image to Supabase Storage and return its public URL.
-const uploadProductImage = async (file: File): Promise<string> => {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new Error("Please select a JPG, PNG or WebP image.");
-  }
-
-  if (file.size > MAX_IMAGE_SIZE) {
-    throw new Error("Image size must be less than 5 MB.");
-  }
-
-  const extension =
-    file.type === "image/jpeg"
-      ? "jpg"
-      : file.type === "image/png"
-        ? "png"
-        : "webp";
-
-  const filePath = `products/${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}.${extension}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("products")
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type,
-    });
-
-  if (uploadError) {
-    throw uploadError;
-  }
-
-  const { data } = supabase.storage.from("products").getPublicUrl(filePath);
-
-  if (!data.publicUrl) {
-    throw new Error("Could not get the uploaded image URL.");
-  }
-
-  return data.publicUrl;
+const formatPrice = (amount: number | null, currency: "IRR" | "USD") => {
+  if (amount === null) return "—";
+  const value = currency === "USD" ? amount / 100 : amount;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "USD" ? 2 : 0,
+  }).format(value);
 };
 
 export function Products() {
-  const { t } = useTranslation();
-
+  const { t, i18n } = useTranslation();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">(
-    "all",
-  );
+  const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
-    null,
-  );
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  const [editForm, setEditForm] = useState<ProductForm>(emptyForm);
-  const [addForm, setAddForm] = useState<ProductForm>(emptyForm);
-
-  const [editImageFile, setEditImageFile] = useState<File | null>(null);
-  const [addImageFile, setAddImageFile] = useState<File | null>(null);
-
-  const [editImagePreview, setEditImagePreview] = useState("");
-  const [addImagePreview, setAddImagePreview] = useState("");
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
 
   const loadProducts = useCallback(async () => {
     setIsLoading(true);
     setError("");
-
     try {
-      const { data, error: fetchError } = await supabase
+      const { data: baseRows, error: productsError } = await supabase
         .from("products")
-        .select(
-          "id, name, description, price, category, stock, image_url, is_active",
-        )
+        .select("id, brand_id, slug, category, is_active, rating, created_at")
         .order("created_at", { ascending: false });
+      if (productsError) throw productsError;
 
-      if (fetchError) throw fetchError;
+      const rows = baseRows ?? [];
+      const productIds = rows.map((row) => row.id);
+      const brandIds = [...new Set(rows.map((row) => row.brand_id).filter(Boolean))];
 
-      const mappedProducts: AdminProduct[] = (data ?? []).map((row) => {
-        const category = (
-          row.category in categoryColors ? row.category : "makeup"
-        ) as ProductCategory;
+      if (productIds.length === 0) {
+        setProducts([]);
+        return;
+      }
+
+      const [translationsResult, variantsResult, imagesResult, brandsResult] = await Promise.all([
+        supabase.from("product_translations").select("product_id, lang, title, description").in("product_id", productIds),
+        supabase.from("product_variants").select("product_id, price_irr, price_usd_cents, stock, is_active, sort_order").in("product_id", productIds).order("sort_order", { ascending: true }),
+        supabase.from("product_images").select("product_id, image_url, is_primary, sort_order").in("product_id", productIds).order("sort_order", { ascending: true }),
+        brandIds.length
+          ? supabase.from("brands").select("id, name").in("id", brandIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (translationsResult.error) throw translationsResult.error;
+      if (variantsResult.error) throw variantsResult.error;
+      if (imagesResult.error) throw imagesResult.error;
+      if (brandsResult.error) throw brandsResult.error;
+
+      const translations = translationsResult.data ?? [];
+      const variants = variantsResult.data ?? [];
+      const images = imagesResult.data ?? [];
+      const brands = brandsResult.data ?? [];
+
+      const mapped: AdminProduct[] = rows.map((row) => {
+        const productTranslations = translations.filter((item) => item.product_id === row.id);
+        const preferred = productTranslations.find((item) => item.lang === i18n.language)
+          ?? productTranslations.find((item) => item.lang === "en")
+          ?? productTranslations.find((item) => item.lang === "fa")
+          ?? productTranslations[0];
+        const productVariants = variants.filter((item) => item.product_id === row.id && item.is_active);
+        const pricedVariant = productVariants.find((item) => item.price_usd_cents !== null)
+          ?? productVariants[0];
+        const productImage = images.find((item) => item.product_id === row.id && item.is_primary)
+          ?? images.find((item) => item.product_id === row.id);
+        const brand = brands.find((item) => item.id === row.brand_id);
+        const category = (row.category in categoryColors ? row.category : "makeup") as ProductCategory;
 
         return {
           id: String(row.id),
-          name: row.name ?? "",
-          description: row.description ?? "",
-          price: Number(row.price ?? 0),
+          slug: row.slug ?? "",
+          name: preferred?.title ?? row.slug ?? "Untitled product",
+          description: preferred?.description ?? "",
+          brandName: brand?.name ?? "",
           category,
-          stock: Number(row.stock ?? 0),
-          imageUrl: row.image_url ?? "",
-          emoji: categoryEmojis[category],
+          priceIrr: pricedVariant?.price_irr ?? null,
+          priceUsdCents: pricedVariant?.price_usd_cents ?? null,
+          stock: productVariants.reduce((sum, item) => sum + Number(item.stock ?? 0), 0),
+          imageUrl: productImage?.image_url ?? "",
           isActive: Boolean(row.is_active),
+          rating: row.rating === null ? null : Number(row.rating),
         };
       });
-
-      setProducts(mappedProducts);
+      setProducts(mapped);
     } catch (err) {
-      console.error("Failed to load products (full Supabase error):", err);
+      console.error("Failed to load ROSA products:", err);
       setError(getReadableError(err));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
-    // Initial product loading is asynchronous.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadProducts();
   }, [loadProducts]);
-
-  const openEditModal = (product: AdminProduct) => {
-    setEditingProduct(product);
-
-    setEditForm({
-      name: product.name,
-      description: product.description,
-      price: String(product.price),
-      stock: String(product.stock),
-      category: product.category,
-      imageUrl: product.imageUrl,
-    });
-
-    setEditImageFile(null);
-    setEditImagePreview("");
-    setSaveError("");
-  };
-
-  const validateForm = (form: ProductForm) => {
-    const price = Number(form.price);
-    const stock = Number(form.stock);
-
-    if (
-      !form.name.trim() ||
-      !Number.isFinite(price) ||
-      price < 0 ||
-      !Number.isInteger(stock) ||
-      stock < 0
-    ) {
-      return null;
-    }
-
-    return { price, stock };
-  };
-
-  const handleEditImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-
-    if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setSaveError("Please select a JPG, PNG or WebP image.");
-      e.target.value = "";
-      return;
-    }
-
-    if (file.size > MAX_IMAGE_SIZE) {
-      setSaveError("Image size must be less than 5 MB.");
-      e.target.value = "";
-      return;
-    }
-
-    try {
-      const preview = await readImagePreview(file);
-      setEditImageFile(file);
-      setEditImagePreview(preview);
-      setSaveError("");
-    } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : "Could not preview image.",
-      );
-    }
-  };
-
-  const handleAddImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-
-    if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setSaveError("Please select a JPG, PNG or WebP image.");
-      e.target.value = "";
-      return;
-    }
-
-    if (file.size > MAX_IMAGE_SIZE) {
-      setSaveError("Image size must be less than 5 MB.");
-      e.target.value = "";
-      return;
-    }
-
-    try {
-      const preview = await readImagePreview(file);
-      setAddImageFile(file);
-      setAddImagePreview(preview);
-      setSaveError("");
-    } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : "Could not preview image.",
-      );
-    }
-  };
-
-  const handleSaveProduct = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!editingProduct) return;
-
-    const values = validateForm(editForm);
-
-    if (!values) {
-      setSaveError("Please enter valid product information.");
-      return;
-    }
-
-    if (!editImageFile && !editForm.imageUrl.trim()) {
-      setSaveError("Please select a product image or enter an image URL.");
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveError("");
-
-    try {
-      // Upload new image only if one was selected.
-      // Otherwise, keep the existing image URL.
-      const imageUrl = editImageFile
-        ? await uploadProductImage(editImageFile)
-        : editForm.imageUrl.trim();
-
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({
-          name: editForm.name.trim(),
-          description: editForm.description.trim(),
-          price: values.price,
-          stock: values.stock,
-          category: editForm.category,
-          image_url: imageUrl,
-        })
-        .eq("id", editingProduct.id);
-
-      if (updateError) throw updateError;
-
-      await loadProducts();
-      setEditingProduct(null);
-      setEditImageFile(null);
-      setEditImagePreview("");
-    } catch (err) {
-      console.error("Failed to update product:", err);
-      setSaveError(
-        err instanceof Error
-          ? err.message
-          : "Could not update product. Please try again.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleAddProduct = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const values = validateForm(addForm);
-
-    if (!values) {
-      setSaveError("Please enter valid product information.");
-      return;
-    }
-
-    if (!addImageFile && !addForm.imageUrl.trim()) {
-      setSaveError("Please select a product image or enter an image URL.");
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveError("");
-
-    try {
-      // Upload image first, then save its public URL.
-      const imageUrl = addImageFile
-        ? await uploadProductImage(addImageFile)
-        : addForm.imageUrl.trim();
-
-      const { error: insertError } = await supabase.from("products").insert({
-        name: addForm.name.trim(),
-        description: addForm.description.trim(),
-        price: values.price,
-        stock: values.stock,
-        category: addForm.category,
-        image_url: imageUrl,
-        is_active: true,
-      });
-
-      if (insertError) throw insertError;
-
-      await loadProducts();
-
-      setAddForm(emptyForm);
-      setAddImageFile(null);
-      setAddImagePreview("");
-      setIsAddModalOpen(false);
-    } catch (err) {
-      console.error("Failed to create product:", err);
-      setSaveError(
-        err instanceof Error
-          ? err.message
-          : "Could not create product. Please try again.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const categoryOptions: { value: ProductCategory | "all"; label: string }[] = [
     { value: "all", label: t("products.allCategories") },
@@ -439,120 +155,40 @@ export function Products() {
     { value: "makeup", label: t("products.categories.makeup") },
   ];
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.description.toLowerCase().includes(search.toLowerCase());
-
-      const matchesCategory =
-        categoryFilter === "all" || product.category === categoryFilter;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [products, search, categoryFilter]);
+  const filteredProducts = useMemo(() => products.filter((product) => {
+    const term = search.toLowerCase();
+    const matchesSearch = product.name.toLowerCase().includes(term)
+      || product.description.toLowerCase().includes(term)
+      || product.brandName.toLowerCase().includes(term)
+      || product.slug.toLowerCase().includes(term);
+    return matchesSearch && (categoryFilter === "all" || product.category === categoryFilter);
+  }), [products, search, categoryFilter]);
 
   const getStockBadge = (stock: number) => {
-    if (stock === 0) {
-      return {
-        label: t("products.outOfStock"),
-        className:
-          "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400",
-      };
-    }
-
-    if (stock < 10) {
-      return {
-        label: t("products.lowStock", { count: stock }),
-        className:
-          "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
-      };
-    }
-
-    return {
-      label: t("products.inStock", { count: stock }),
-      className:
-        "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400",
-    };
-  };
-
-  const closeEditModal = () => {
-    if (isSaving) return;
-    setEditingProduct(null);
-    setEditImageFile(null);
-    setEditImagePreview("");
-    setSaveError("");
-  };
-
-  const closeAddModal = () => {
-    if (isSaving) return;
-    setIsAddModalOpen(false);
-    setAddForm(emptyForm);
-    setAddImageFile(null);
-    setAddImagePreview("");
-    setSaveError("");
+    if (stock === 0) return { label: t("products.outOfStock"), className: "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400" };
+    if (stock < 10) return { label: t("products.lowStock", { count: stock }), className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400" };
+    return { label: t("products.inStock", { count: stock }), className: "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400" };
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {t("products.title")}
-          </h1>
-
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {t("products.count", {
-              filtered: filteredProducts.length,
-              total: products.length,
-            })}
-          </p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t("products.title")}</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{t("products.count", { filtered: filteredProducts.length, total: products.length })}</p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSaveError("");
-            setAddForm(emptyForm);
-            setAddImageFile(null);
-            setAddImagePreview("");
-            setIsAddModalOpen(true);
-          }}
-          className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium"
-        >
-          <Plus size={16} />
-          {t("products.addProduct")}
+        <button type="button" onClick={() => void loadProducts()} disabled={isLoading} className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50">
+          <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search
-            className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
-
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("products.searchPlaceholder")}
-            className="w-full ps-10 pe-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-          />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input type="text" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("products.searchPlaceholder")} className="w-full ps-10 pe-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500" />
         </div>
-
-        <select
-          value={categoryFilter}
-          onChange={(e) =>
-            setCategoryFilter(e.target.value as ProductCategory | "all")
-          }
-          className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent cursor-pointer"
-        >
-          {categoryOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+        <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as ProductCategory | "all")} className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200">
+          {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </div>
 
@@ -564,12 +200,7 @@ export function Products() {
       ) : error ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-red-200 dark:border-red-500/30 text-center">
           <p className="text-sm text-red-500 mb-4">{error}</p>
-          <button
-            onClick={() => void loadProducts()}
-            className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            Try again
-          </button>
+          <button onClick={() => void loadProducts()} className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm">Try again</button>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center">
@@ -579,354 +210,31 @@ export function Products() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {filteredProducts.map((product) => {
             const stockBadge = getStockBadge(product.stock);
-
             return (
-              <div
-                key={product.id}
-                className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 hover:shadow-md transition-all group"
-              >
+              <div key={product.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 hover:shadow-md transition-all">
                 <div className="flex items-start justify-between mb-4 gap-2">
                   <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-3xl shrink-0 overflow-hidden">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      product.emoji
-                    )}
+                    {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /> : categoryEmojis[product.category]}
                   </div>
-
                   <div className="flex flex-col items-end gap-1">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${categoryColors[product.category]}`}
-                    >
-                      {t(`products.categories.${product.category}`)}
-                    </span>
-
-                    {!product.isActive && (
-                      <span className="text-[10px] text-red-500">Inactive</span>
-                    )}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${categoryColors[product.category]}`}>{t(`products.categories.${product.category}`)}</span>
+                    {!product.isActive && <span className="text-[10px] text-red-500">Inactive</span>}
                   </div>
                 </div>
-
-                <h3 className="font-semibold text-slate-800 dark:text-slate-100">
-                  {product.name}
-                </h3>
-
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {product.description}
-                </p>
-
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100">{product.name}</h3>
+                {product.brandName && <p className="text-xs text-pink-500 mt-1">{product.brandName}</p>}
+                {product.description && <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">{product.description}</p>}
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 gap-2">
                   <div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                      ${product.price}
-                    </p>
-
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium mt-1 whitespace-nowrap ${stockBadge.className}`}
-                    >
-                      {stockBadge.label}
-                    </span>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{product.priceUsdCents !== null ? formatPrice(product.priceUsdCents, "USD") : formatPrice(product.priceIrr, "IRR")}</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium mt-1 whitespace-nowrap ${stockBadge.className}`}>{stockBadge.label}</span>
                   </div>
-
-                  <button
-                    onClick={() => openEditModal(product)}
-                    className="text-xs text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 font-medium whitespace-nowrap"
-                  >
-                    {t("products.edit")} →
-                  </button>
+                  {product.rating !== null && <span className="text-xs text-slate-500">★ {product.rating.toFixed(1)}</span>}
                 </div>
+                <p className="text-[10px] text-slate-400 mt-3">{product.slug}</p>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {(editingProduct || isAddModalOpen) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-xl"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                {editingProduct ? "Edit product" : "Add new product"}
-              </h2>
-
-              <button
-                type="button"
-                onClick={editingProduct ? closeEditModal : closeAddModal}
-                disabled={isSaving}
-                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                aria-label="Close"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form
-              onSubmit={editingProduct ? handleSaveProduct : handleAddProduct}
-              className="p-5 space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
-                  Product name
-                </label>
-                <input
-                  className={inputClass}
-                  value={editingProduct ? editForm.name : addForm.name}
-                  onChange={(e) =>
-                    editingProduct
-                      ? setEditForm({ ...editForm, name: e.target.value })
-                      : setAddForm({ ...addForm, name: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
-                  Description
-                </label>
-                <textarea
-                  className={inputClass}
-                  rows={3}
-                  value={
-                    editingProduct ? editForm.description : addForm.description
-                  }
-                  onChange={(e) =>
-                    editingProduct
-                      ? setEditForm({
-                          ...editForm,
-                          description: e.target.value,
-                        })
-                      : setAddForm({
-                          ...addForm,
-                          description: e.target.value,
-                        })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
-                    Price ($)
-                  </label>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={editingProduct ? editForm.price : addForm.price}
-                    onChange={(e) =>
-                      editingProduct
-                        ? setEditForm({ ...editForm, price: e.target.value })
-                        : setAddForm({ ...addForm, price: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
-                    Stock
-                  </label>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={editingProduct ? editForm.stock : addForm.stock}
-                    onChange={(e) =>
-                      editingProduct
-                        ? setEditForm({ ...editForm, stock: e.target.value })
-                        : setAddForm({ ...addForm, stock: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1.5">
-                  Category
-                </label>
-                <select
-                  className={inputClass}
-                  value={editingProduct ? editForm.category : addForm.category}
-                  onChange={(e) =>
-                    editingProduct
-                      ? setEditForm({
-                          ...editForm,
-                          category: e.target.value as ProductCategory,
-                        })
-                      : setAddForm({
-                          ...addForm,
-                          category: e.target.value as ProductCategory,
-                        })
-                  }
-                >
-                  {categoryOptions
-                    .filter((option) => option.value !== "all")
-                    .map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Product image upload */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
-                  Product image
-                </label>
-
-                <label className="flex flex-col items-center justify-center gap-2 w-full p-5 border-2 border-dashed border-pink-300 dark:border-pink-500/40 rounded-xl cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-500/5 transition-colors">
-                  <Upload size={25} className="text-pink-500" />
-
-                  <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
-                    Choose image from computer
-                  </span>
-
-                  <span className="text-xs text-slate-400">
-                    JPG, PNG or WebP · Maximum 5 MB
-                  </span>
-
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={
-                      editingProduct
-                        ? handleEditImageChange
-                        : handleAddImageChange
-                    }
-                    disabled={isSaving}
-                  />
-                </label>
-
-                {(editingProduct ? editImagePreview : addImagePreview) ? (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
-                    <img
-                      src={editingProduct ? editImagePreview : addImagePreview}
-                      alt="Selected product"
-                      className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                        New image selected
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1 truncate">
-                        {editingProduct
-                          ? editImageFile?.name
-                          : addImageFile?.name}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => {
-                        if (editingProduct) {
-                          setEditImageFile(null);
-                          setEditImagePreview("");
-                        } else {
-                          setAddImageFile(null);
-                          setAddImagePreview("");
-                        }
-                      }}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
-                      aria-label="Remove selected image"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                ) : (
-                  (editingProduct ? editForm.imageUrl : addForm.imageUrl) && (
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={
-                          editingProduct ? editForm.imageUrl : addForm.imageUrl
-                        }
-                        alt="Current product"
-                        className="w-20 h-20 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
-                      />
-                      <span className="text-xs text-slate-500">
-                        Current product image
-                      </span>
-                    </div>
-                  )
-                )}
-
-                <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1.5">
-                    Or paste an image URL
-                  </label>
-
-                  <input
-                    className={inputClass}
-                    type="url"
-                    placeholder="https://example.com/product.jpg"
-                    value={
-                      editingProduct ? editForm.imageUrl : addForm.imageUrl
-                    }
-                    onChange={(e) =>
-                      editingProduct
-                        ? setEditForm({
-                            ...editForm,
-                            imageUrl: e.target.value,
-                          })
-                        : setAddForm({
-                            ...addForm,
-                            imageUrl: e.target.value,
-                          })
-                    }
-                  />
-
-                  <p className="text-xs text-slate-400 mt-1">
-                    If you select a local image, it will be used instead of this
-                    URL.
-                  </p>
-                </div>
-              </div>
-
-              {saveError && (
-                <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg">
-                  {saveError}
-                </p>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={editingProduct ? closeEditModal : closeAddModal}
-                  disabled={isSaving}
-                  className="px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
-                >
-                  {isSaving
-                    ? "Saving..."
-                    : editingProduct
-                      ? "Save changes"
-                      : "Add product"}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

@@ -83,9 +83,11 @@ export function Orders() {
         id: item.id,
         productId: item.product_id,
         productName:
-          item.product_snapshot?.title?.fa ??
-          item.product_snapshot?.title?.en ??
-          item.product_snapshot?.title?.ar ??
+          (typeof item.product_snapshot?.title === "string"
+            ? item.product_snapshot.title
+            : item.product_snapshot?.title?.fa ??
+              item.product_snapshot?.title?.en ??
+              item.product_snapshot?.title?.ar) ??
           item.product_snapshot?.brand ??
           item.product_id ??
           "Product",

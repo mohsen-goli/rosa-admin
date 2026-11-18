@@ -11,7 +11,7 @@ const colors: Record<DatabaseOrderStatus, string> = {
 export function StatusDonut({ orders }: Props) {
   const { t } = useTranslation();
   const data = statuses.map((status) => ({
-    name: t(\`orders.status.\${status}\`), value: orders.filter((order) => order.status === status).length, color: colors[status],
+    name: t(`orders.status.${status}`), value: orders.filter((order) => order.status === status).length, color: colors[status],
   }));
   return <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 transition-colors">
     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">{t("dashboard.charts.ordersByStatus")}</h3>

@@ -66,6 +66,31 @@ const emptyForm: ProductForm = {
   imageUrl: "",
 };
 
+// Supabase/PostgREST errors are not always preserved as native Error instances.
+const getReadableError = (error: unknown): string => {
+  if (error instanceof Error && error.message) return error.message;
+
+  if (typeof error === "object" && error !== null) {
+    const value = error as {
+      message?: unknown;
+      details?: unknown;
+      hint?: unknown;
+      code?: unknown;
+    };
+    const parts = [value.message, value.details, value.hint]
+      .filter((part): part is string => typeof part === "string" && part.length > 0);
+    if (parts.length > 0) {
+      return [value.code, ...parts]
+        .filter((part): part is string => typeof part === "string" && part.length > 0)
+        .join(" — ");
+    }
+  }
+
+  return typeof error === "string" && error.length > 0
+    ? error
+    : "Could not load products. Please try again.";
+};
+
 // Read local image for preview.
 const readImagePreview = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -189,12 +214,8 @@ export function Products() {
 
       setProducts(mappedProducts);
     } catch (err) {
-      console.error("Failed to load products:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not load products. Please try again.",
-      );
+      console.error("Failed to load products (full Supabase error):", err);
+      setError(getReadableError(err));
     } finally {
       setIsLoading(false);
     }

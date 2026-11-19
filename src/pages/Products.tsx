@@ -90,7 +90,7 @@ export function Products() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   // The user explicitly approved product management against the connected ROSA Supabase project.
-  const canWriteProducts = true;
+  const canWriteProducts = import.meta.env.VITE_ENABLE_PRODUCT_WRITES === "true";
 
   const loadProducts = useCallback(async () => {
     setIsLoading(true); setError("");

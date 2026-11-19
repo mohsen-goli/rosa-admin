@@ -16,7 +16,7 @@ interface OrderRow {
   order_items: {
     id: string;
     product_id: string | null;
-    product_snapshot: { title?: { fa?: string; en?: string; ar?: string }; brand?: string } | null;
+    product_snapshot: { title?: unknown; brand?: unknown } | null;
     unit_price: number;
     quantity: number;
     line_total: number;
@@ -27,6 +27,19 @@ const validStatuses: DatabaseOrderStatus[] = ["pending", "processing", "shipped"
 
 function textValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
+}
+
+function productText(value: unknown, language: string): string {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+
+  const record = value as Record<string, unknown>;
+  const localized = record[language] ?? record.en ?? record.fa ?? record.ar;
+  if (localized !== undefined) {
+    const result = productText(localized, language);
+    if (result) return result;
+  }
+  return productText(record.title, language);
 }
 
 function mapOrder(row: OrderRow): DatabaseOrder {
@@ -56,11 +69,9 @@ function mapOrder(row: OrderRow): DatabaseOrder {
     items: (row.order_items ?? []).map((item) => ({
       id: item.id,
       productId: item.product_id,
-      productName: item.product_snapshot?.title?.fa ??
-        item.product_snapshot?.title?.en ??
-        item.product_snapshot?.title?.ar ??
-        item.product_snapshot?.brand ??
-        item.product_id ?? "Product",
+      productName: productText(item.product_snapshot?.title, "fa") ||
+        productText(item.product_snapshot?.brand, "fa") ||
+        item.product_id || "Product",
       unitPrice: Number(item.unit_price ?? 0),
       quantity: Number(item.quantity ?? 0),
       lineTotal: Number(item.line_total ?? 0),

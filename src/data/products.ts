@@ -4,7 +4,7 @@ export const mockProducts: Product[] = [
   {
     id: "prd-001",
     name: "Matte Lipstick",
-    category: "lipstick",
+    category: "makeup",
     price: 45,
     stock: 24,
     description: "Long-lasting matte finish",
@@ -13,7 +13,7 @@ export const mockProducts: Product[] = [
   {
     id: "prd-002",
     name: "Velvet Lip Gloss",
-    category: "lipstick",
+    category: "makeup",
     price: 38,
     stock: 15,
     description: "Shiny and hydrating",

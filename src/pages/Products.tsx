@@ -320,7 +320,7 @@ export function Products() {
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2"><div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{variant?.price_usd_cents != null ? formatPrice(variant.price_usd_cents, "USD") : formatPrice(variant?.price_irr ?? null, "IRR")}</p>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] mt-1 ${stockBadge.className}`}>{stockBadge.label}</span></div>
-              <div className="flex flex-col gap-2 items-end"><button onClick={() => openEdit(product)} disabled={!canWriteProducts} className="flex items-center gap-1 text-xs text-pink-500 font-medium disabled:opacity-40 disabled:cursor-not-allowed"><Pencil size={13}/>Edit</button>
+              <div className="flex flex-col gap-2 items-end"><button onClick={() => openEdit(product)} disabled={!canWriteProducts || product.variants.length > 1} title={product.variants.length > 1 ? "This product has multiple variants; edit is disabled to avoid changing the wrong variant." : undefined} className="flex items-center gap-1 text-xs text-pink-500 font-medium disabled:opacity-40 disabled:cursor-not-allowed"><Pencil size={13}/>Edit</button>
                 <button onClick={() => void toggleActive(product)} disabled={!canWriteProducts} className={`flex items-center gap-1 text-xs ${product.isActive ? "text-red-500" : "text-green-600"} disabled:opacity-40 disabled:cursor-not-allowed`}><Power size={13}/>{product.isActive ? "Deactivate" : "Activate"}</button></div></div>
             <p className="text-[10px] text-slate-400 mt-3">{product.slug}</p>
           </div>;

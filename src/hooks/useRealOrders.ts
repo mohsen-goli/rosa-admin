@@ -38,8 +38,6 @@ export function useRealOrders() {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     const { data, error: queryError } = await supabase
       .from("orders")
       .select("id, code, currency, total, status, created_at, user_id, customer, order_items(quantity)")
@@ -52,6 +50,7 @@ export function useRealOrders() {
     }
 
     const rows = (data ?? []) as unknown as OrderRow[];
+    setError(null);
     setOrders(rows.flatMap((row) => {
       const currency = row.currency.toUpperCase();
       if (currency !== "IRR" && currency !== "USD") return [];

@@ -84,7 +84,7 @@ export function useDatabaseOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const fetchOrders = useCallback(async () => {
     const { data, error: queryError } = await supabase
       .from("orders")
       .select(`
@@ -105,6 +105,11 @@ export function useDatabaseOrders() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    await fetchOrders();
+  }, [fetchOrders]);
+
+  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
   return { orders, loading, error, refresh };
 }

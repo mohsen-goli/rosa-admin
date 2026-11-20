@@ -93,40 +93,41 @@ export function Products() {
 
   const fetchProducts = useCallback(async () => {
     try {
+      // Fetch products and their related data in one request to avoid multiple
+      // network round trips before the product grid can render.
       const [productsResult, brandsResult] = await Promise.all([
-        supabase.from("products").select("id, brand_id, slug, category, is_active, rating, created_at").order("created_at", { ascending: false }),
+        supabase.from("products")
+          .select(`
+            id, brand_id, slug, category, is_active, rating, created_at,
+            brand:brands!products_brand_id_fkey (id, name),
+            translations:product_translations (id, lang, title, description),
+            variants:product_variants (id, sku, price_irr, price_usd_cents, stock, is_active, sort_order),
+            images:product_images (id, image_url, is_primary, sort_order)
+          `)
+          .order("created_at", { ascending: false }),
         supabase.from("brands").select("id, name").eq("is_active", true).order("sort_order", { ascending: true }),
       ]);
       if (productsResult.error) throw productsResult.error;
       if (brandsResult.error) throw brandsResult.error;
       setError("");
-      const rows = productsResult.data ?? [];
       setBrands(brandsResult.data ?? []);
-      if (!rows.length) { setProducts([]); return; }
-      const ids = rows.map((row) => row.id);
-      const [tr, vr, ir] = await Promise.all([
-        supabase.from("product_translations").select("id, product_id, lang, title, description").in("product_id", ids),
-        supabase.from("product_variants").select("id, product_id, sku, price_irr, price_usd_cents, stock, is_active, sort_order").in("product_id", ids).order("sort_order", { ascending: true }),
-        supabase.from("product_images").select("id, product_id, image_url, is_primary, sort_order").in("product_id", ids).order("sort_order", { ascending: true }),
-      ]);
-      if (tr.error) throw tr.error;
-      if (vr.error) throw vr.error;
-      if (ir.error) throw ir.error;
-      const mapped: AdminProduct[] = rows.map((row) => {
-        const ts = (tr.data ?? []).filter((x) => x.product_id === row.id);
+      const mapped: AdminProduct[] = (productsResult.data ?? []).map((row) => {
         const translations = { ...emptyTranslations };
         for (const lang of languages) {
-          const item = ts.find((x) => x.lang === lang);
+          const item = row.translations?.find((x) => x.lang === lang);
           if (item) translations[lang] = { title: item.title ?? "", description: item.description ?? "" };
         }
-        const variants = (vr.data ?? []).filter((x) => x.product_id === row.id && x.is_active).map((x) => ({
-          id: x.id, sku: x.sku ?? "", price_irr: x.price_irr === null ? null : Number(x.price_irr),
-          price_usd_cents: x.price_usd_cents === null ? null : Number(x.price_usd_cents), stock: Number(x.stock ?? 0),
-        }));
-        const image = (ir.data ?? []).find((x) => x.product_id === row.id && x.is_primary) ?? (ir.data ?? []).find((x) => x.product_id === row.id);
-        const brand = (brandsResult.data ?? []).find((x) => x.id === row.brand_id);
+        const variants = (row.variants ?? [])
+          .filter((x) => x.is_active)
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((x) => ({
+            id: x.id, sku: x.sku ?? "", price_irr: x.price_irr === null ? null : Number(x.price_irr),
+            price_usd_cents: x.price_usd_cents === null ? null : Number(x.price_usd_cents), stock: Number(x.stock ?? 0),
+          }));
+        const image = row.images?.find((x) => x.is_primary)
+          ?? [...(row.images ?? [])].sort((a, b) => a.sort_order - b.sort_order)[0];
         return {
-          id: row.id, slug: row.slug ?? "", brandId: row.brand_id ?? "", brandName: brand?.name ?? "",
+          id: row.id, slug: row.slug ?? "", brandId: row.brand_id ?? "", brandName: row.brand?.name ?? "",
           category: (row.category in categoryColors ? row.category : "makeup") as ProductCategory,
           isActive: Boolean(row.is_active), rating: row.rating === null ? null : Number(row.rating),
           imageUrl: image?.image_url ?? "", imageId: image?.id ?? null, translations, variants,

@@ -85,8 +85,6 @@ export function useDatabaseOrders() {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     const { data, error: queryError } = await supabase
       .from("orders")
       .select(`
@@ -102,6 +100,7 @@ export function useDatabaseOrders() {
       return;
     }
 
+    setError(null);
     setOrders(((data ?? []) as unknown as OrderRow[]).map(mapOrder));
     setLoading(false);
   }, []);

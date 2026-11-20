@@ -138,7 +138,7 @@ export function useDatabaseOrders() {
   }, [fetchOrders]);
 
   useEffect(() => {
-    void fetchOrders();
+    void Promise.resolve().then(fetchOrders);
   }, [fetchOrders]);
 
   return { orders, loading, error, refresh };

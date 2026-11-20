@@ -92,7 +92,6 @@ export function Products() {
   const canWriteProducts = import.meta.env.VITE_ENABLE_PRODUCT_WRITES === "true";
 
   const loadProducts = useCallback(async () => {
-    setIsLoading(true); setError("");
     try {
       const [productsResult, brandsResult] = await Promise.all([
         supabase.from("products").select("id, brand_id, slug, category, is_active, rating, created_at").order("created_at", { ascending: false }),
@@ -100,6 +99,7 @@ export function Products() {
       ]);
       if (productsResult.error) throw productsResult.error;
       if (brandsResult.error) throw brandsResult.error;
+      setError("");
       const rows = productsResult.data ?? [];
       setBrands(brandsResult.data ?? []);
       if (!rows.length) { setProducts([]); return; }

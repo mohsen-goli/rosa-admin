@@ -127,7 +127,7 @@ export function Products() {
         const image = row.images?.find((x) => x.is_primary)
           ?? [...(row.images ?? [])].sort((a, b) => a.sort_order - b.sort_order)[0];
         return {
-          id: row.id, slug: row.slug ?? "", brandId: row.brand_id ?? "", brandName: row.brand?.name ?? "",
+          id: row.id, slug: row.slug ?? "", brandId: row.brand_id ?? "", brandName: row.brand?.[0]?.name ?? "",
           category: (row.category in categoryColors ? row.category : "makeup") as ProductCategory,
           isActive: Boolean(row.is_active), rating: row.rating === null ? null : Number(row.rating),
           imageUrl: image?.image_url ?? "", imageId: image?.id ?? null, translations, variants,

@@ -4,7 +4,9 @@
     "orders": "Orders",
     "products": "Products",
     "customers": "Customers",
-    "settings": "Settings"
+    "settings": "Settings",
+    "reviews": "Reviews",
+    "feedback": "User Messages"
   },
   "auth": {
     "welcomeBackUser": "Welcome back, {{email}}",

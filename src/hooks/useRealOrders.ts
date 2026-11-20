@@ -78,11 +78,18 @@ export function useRealOrders() {
   }, [fetchOrders]);
 
   useEffect(() => {
-    void fetchOrders();
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchOrders();
+      return undefined;
+    });
     const channel = supabase.channel("rosa-admin-dashboard-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void fetchOrders())
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
   }, [fetchOrders]);
 
   return { orders, loading, error, refresh };

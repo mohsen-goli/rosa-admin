@@ -7,6 +7,8 @@ import {
   Users,
   Package,
   Settings,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import { useLanguageStore } from "../../features/language/languageStore";
 
@@ -20,6 +22,8 @@ const navItems = [
   { icon: ShoppingCart, labelKey: "nav.orders", href: "/orders" },
   { icon: Package, labelKey: "nav.products", href: "/products" },
   { icon: Users, labelKey: "nav.customers", href: "/customers" },
+  { icon: Star, labelKey: "nav.reviews", href: "/reviews" },
+  { icon: MessageSquare, labelKey: "nav.feedback", href: "/feedback" },
   { icon: Settings, labelKey: "nav.settings", href: "/settings" },
 ];
 

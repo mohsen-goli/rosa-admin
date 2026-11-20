@@ -27,6 +27,29 @@ const navItems = [
   { icon: Settings, labelKey: "nav.settings", href: "/settings" },
 ];
 
+function prefetchPage(href: string) {
+  switch (href) {
+    case "/orders":
+      void import("../../pages/Orders");
+      break;
+    case "/products":
+      void import("../../pages/Products");
+      break;
+    case "/customers":
+      void import("../../pages/Customers");
+      break;
+    case "/reviews":
+      void import("../../pages/Reviews");
+      break;
+    case "/feedback":
+      void import("../../pages/Feedback");
+      break;
+    case "/settings":
+      void import("../../pages/Settings");
+      break;
+  }
+}
+
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const language = useLanguageStore((state) => state.language);
@@ -80,6 +103,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 to={item.href}
                 end={item.href === "/"}
                 onClick={onClose}
+                onMouseEnter={() => prefetchPage(item.href)}
+                onFocus={() => prefetchPage(item.href)}
+                onTouchStart={() => prefetchPage(item.href)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive

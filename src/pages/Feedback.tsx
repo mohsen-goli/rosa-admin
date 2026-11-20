@@ -33,7 +33,9 @@ export function Feedback() {
     }
   }, [t.loadError]);
 
-  useEffect(() => { void loadMessages(); }, [loadMessages]);
+  useEffect(() => {
+    void Promise.resolve().then(loadMessages);
+  }, [loadMessages]);
 
   async function updateStatus(id: string, status: "new" | "read") {
     setNotice("");

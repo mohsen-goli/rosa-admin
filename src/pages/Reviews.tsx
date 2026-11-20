@@ -37,7 +37,9 @@ export function Reviews() {
     }
   }, [t.loadError]);
 
-  useEffect(() => { void loadReviews(); }, [loadReviews]);
+  useEffect(() => {
+    void Promise.resolve().then(loadReviews);
+  }, [loadReviews]);
 
   async function moderate(id: string, status: "approved" | "rejected") {
     if (updatingId) return;

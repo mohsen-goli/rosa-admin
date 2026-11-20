@@ -91,7 +91,7 @@ export function Products() {
   // The user explicitly approved product management against the connected ROSA Supabase project.
   const canWriteProducts = import.meta.env.VITE_ENABLE_PRODUCT_WRITES === "true";
 
-  const loadProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const [productsResult, brandsResult] = await Promise.all([
         supabase.from("products").select("id, brand_id, slug, category, is_active, rating, created_at").order("created_at", { ascending: false }),
@@ -139,7 +139,12 @@ export function Products() {
     } finally { setIsLoading(false); }
   }, []);
 
-  useEffect(() => { void loadProducts(); }, [loadProducts]);
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    await fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => { void fetchProducts(); }, [fetchProducts]);
 
   const activeLanguage = (["fa", "en", "ar"].includes(i18n.language.split("-")[0]) ? i18n.language.split("-")[0] : "en") as Lang;
   const filteredProducts = useMemo(() => products.filter((p) => {

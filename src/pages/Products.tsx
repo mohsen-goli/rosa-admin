@@ -33,14 +33,13 @@ const emptyForm: ProductForm = {
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const categoryColors: Record<ProductCategory, string> = {
-  lipstick: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
   skincare: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
   perfume: "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400",
   haircare: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
   makeup: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
 };
 const categoryEmojis: Record<ProductCategory, string> = {
-  lipstick: "💄", skincare: "🧴", perfume: "🌸", haircare: "🧖", makeup: "💋",
+  skincare: "🧴", perfume: "🌸", haircare: "🧖", makeup: "💋",
 };
 const inputClass = "w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500";
 
@@ -92,8 +91,7 @@ export function Products() {
   // The user explicitly approved product management against the connected ROSA Supabase project.
   const canWriteProducts = import.meta.env.VITE_ENABLE_PRODUCT_WRITES === "true";
 
-  const loadProducts = useCallback(async () => {
-    setIsLoading(true); setError("");
+  const fetchProducts = useCallback(async () => {
     try {
       const [productsResult, brandsResult] = await Promise.all([
         supabase.from("products").select("id, brand_id, slug, category, is_active, rating, created_at").order("created_at", { ascending: false }),
@@ -101,6 +99,7 @@ export function Products() {
       ]);
       if (productsResult.error) throw productsResult.error;
       if (brandsResult.error) throw brandsResult.error;
+      setError("");
       const rows = productsResult.data ?? [];
       setBrands(brandsResult.data ?? []);
       if (!rows.length) { setProducts([]); return; }
@@ -140,7 +139,19 @@ export function Products() {
     } finally { setIsLoading(false); }
   }, []);
 
-  useEffect(() => { void loadProducts(); }, [loadProducts]);
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    await fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchProducts();
+      return undefined;
+    });
+    return () => { cancelled = true; };
+  }, [fetchProducts]);
 
   const activeLanguage = (["fa", "en", "ar"].includes(i18n.language.split("-")[0]) ? i18n.language.split("-")[0] : "en") as Lang;
   const filteredProducts = useMemo(() => products.filter((p) => {
@@ -151,7 +162,6 @@ export function Products() {
   }), [products, search, categoryFilter, activeLanguage]);
   const categoryOptions: { value: ProductCategory | "all"; label: string }[] = [
     { value: "all", label: t("products.allCategories") },
-    { value: "lipstick", label: t("products.categories.lipstick") },
     { value: "skincare", label: t("products.categories.skincare") },
     { value: "perfume", label: t("products.categories.perfume") },
     { value: "haircare", label: t("products.categories.haircare") },
@@ -195,9 +205,9 @@ export function Products() {
     const irr = form.priceIrr.trim() === "" ? null : Number(form.priceIrr);
     const usd = form.priceUsd.trim() === "" ? null : Math.round(Number(form.priceUsd) * 100);
     if (!enTitle || !faTitle || !sku || !Number.isInteger(stock) || stock < 0 ||
-      (irr !== null && (!Number.isSafeInteger(irr) || irr < 0)) ||
+      (irr === null || !Number.isSafeInteger(irr) || irr < 0) ||
       (usd !== null && (!Number.isSafeInteger(usd) || usd < 0)) || (irr === null && usd === null)) {
-      setSaveError("Please enter Persian and English titles, SKU, a valid stock and at least one valid price."); return;
+      setSaveError("Please enter Persian and English titles, SKU, a valid stock, a valid IRR price and (optionally) a valid USD price."); return;
     }
     if (!imageFile && !form.imageUrl.trim()) { setSaveError("Please select a product image or enter an image URL."); return; }
     setIsSaving(true); setSaveError("");
@@ -221,10 +231,16 @@ export function Products() {
 
       for (const lang of languages) {
         const value = form.translations[lang];
-        if (!value.title.trim()) continue;
         const { data: existing, error: findError } = await supabase.from("product_translations")
           .select("id").eq("product_id", productId!).eq("lang", lang).maybeSingle();
         if (findError) throw findError;
+        if (!value.title.trim()) {
+          if (existing?.id) {
+            const { error: deleteError } = await supabase.from("product_translations").delete().eq("id", existing.id);
+            if (deleteError) throw deleteError;
+          }
+          continue;
+        }
         const payload = { title: value.title.trim(), description: value.description.trim() || null };
         const result = existing?.id
           ? await supabase.from("product_translations").update(payload).eq("id", existing.id)
@@ -316,7 +332,7 @@ export function Products() {
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2"><div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{variant?.price_usd_cents != null ? formatPrice(variant.price_usd_cents, "USD") : formatPrice(variant?.price_irr ?? null, "IRR")}</p>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] mt-1 ${stockBadge.className}`}>{stockBadge.label}</span></div>
-              <div className="flex flex-col gap-2 items-end"><button onClick={() => openEdit(product)} disabled={!canWriteProducts} className="flex items-center gap-1 text-xs text-pink-500 font-medium disabled:opacity-40 disabled:cursor-not-allowed"><Pencil size={13}/>Edit</button>
+              <div className="flex flex-col gap-2 items-end"><button onClick={() => openEdit(product)} disabled={!canWriteProducts || product.variants.length > 1} title={product.variants.length > 1 ? "This product has multiple variants; edit is disabled to avoid changing the wrong variant." : undefined} className="flex items-center gap-1 text-xs text-pink-500 font-medium disabled:opacity-40 disabled:cursor-not-allowed"><Pencil size={13}/>Edit</button>
                 <button onClick={() => void toggleActive(product)} disabled={!canWriteProducts} className={`flex items-center gap-1 text-xs ${product.isActive ? "text-red-500" : "text-green-600"} disabled:opacity-40 disabled:cursor-not-allowed`}><Power size={13}/>{product.isActive ? "Deactivate" : "Activate"}</button></div></div>
             <p className="text-[10px] text-slate-400 mt-3">{product.slug}</p>
           </div>;

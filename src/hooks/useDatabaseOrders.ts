@@ -22,7 +22,7 @@ interface OrderRow {
         product_id: string | null;
         product_snapshot: {
           title?: unknown;
-          brand?: string;
+          brand?: unknown;
         } | null;
         unit_price: number;
         quantity: number;
@@ -43,34 +43,28 @@ function textValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function getSnapshotProductName(title: unknown): string | undefined {
-  if (typeof title === "string" && title.trim()) return title;
-  if (!title || typeof title !== "object") return undefined;
+function productText(value: unknown, language: string): string {
+  if (typeof value === "string") return value;
 
-  const translations = title as Record<string, unknown>;
-
-  for (const locale of ["fa", "en", "ar"]) {
-    const localized = translations[locale];
-
-    if (typeof localized === "string" && localized.trim()) {
-      return localized;
-    }
-
-    if (localized && typeof localized === "object") {
-      const localizedTitle = (localized as Record<string, unknown>).title;
-
-      if (typeof localizedTitle === "string" && localizedTitle.trim()) {
-        return localizedTitle;
-      }
-    }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return "";
   }
 
-  return undefined;
+  const record = value as Record<string, unknown>;
+  const localized = record[language] ?? record.en ?? record.fa ?? record.ar;
+
+  if (localized !== undefined) {
+    const result = productText(localized, language);
+    if (result) return result;
+  }
+
+  return productText(record.title, language);
 }
 
 function mapOrder(row: OrderRow): DatabaseOrder {
   const customer = row.customer ?? {};
   const currency = row.currency === "USD" ? "USD" : "IRR";
+
   const status = validStatuses.includes(row.status as DatabaseOrderStatus)
     ? (row.status as DatabaseOrderStatus)
     : "pending";
@@ -98,9 +92,9 @@ function mapOrder(row: OrderRow): DatabaseOrder {
       id: item.id,
       productId: item.product_id,
       productName:
-        getSnapshotProductName(item.product_snapshot?.title) ??
-        item.product_snapshot?.brand ??
-        item.product_id ??
+        productText(item.product_snapshot?.title, "fa") ||
+        productText(item.product_snapshot?.brand, "fa") ||
+        item.product_id ||
         "Product",
       unitPrice: Number(item.unit_price ?? 0),
       quantity: Number(item.quantity ?? 0),
@@ -114,10 +108,7 @@ export function useDatabaseOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
+  const fetchOrders = useCallback(async () => {
     const { data, error: queryError } = await supabase
       .from("orders")
       .select(
@@ -135,13 +126,20 @@ export function useDatabaseOrders() {
       return;
     }
 
+    setError(null);
     setOrders(((data ?? []) as unknown as OrderRow[]).map(mapOrder));
     setLoading(false);
   }, []);
 
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    await fetchOrders();
+  }, [fetchOrders]);
+
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void fetchOrders();
+  }, [fetchOrders]);
 
   return { orders, loading, error, refresh };
 }

@@ -1,5 +1,4 @@
 export type ProductCategory =
-  | "lipstick"
   | "skincare"
   | "perfume"
   | "haircare"

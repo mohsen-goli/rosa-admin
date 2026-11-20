@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import type { DatabaseOrder, DatabaseOrderStatus } from "../types/databaseOrder";
+import type {
+  DatabaseOrder,
+  DatabaseOrderStatus,
+} from "../types/databaseOrder";
 
 interface OrderRow {
   id: string;
@@ -13,17 +16,28 @@ interface OrderRow {
   total: number;
   customer: Record<string, unknown> | null;
   created_at: string;
-  order_items: {
-    id: string;
-    product_id: string | null;
-    product_snapshot: { title?: unknown; brand?: unknown } | null;
-    unit_price: number;
-    quantity: number;
-    line_total: number;
-  }[] | null;
+  order_items:
+    | {
+        id: string;
+        product_id: string | null;
+        product_snapshot: {
+          title?: unknown;
+          brand?: unknown;
+        } | null;
+        unit_price: number;
+        quantity: number;
+        line_total: number;
+      }[]
+    | null;
 }
 
-const validStatuses: DatabaseOrderStatus[] = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const validStatuses: DatabaseOrderStatus[] = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+];
 
 function textValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -31,22 +45,28 @@ function textValue(value: unknown, fallback = ""): string {
 
 function productText(value: unknown, language: string): string {
   if (typeof value === "string") return value;
-  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return "";
+  }
 
   const record = value as Record<string, unknown>;
   const localized = record[language] ?? record.en ?? record.fa ?? record.ar;
+
   if (localized !== undefined) {
     const result = productText(localized, language);
     if (result) return result;
   }
+
   return productText(record.title, language);
 }
 
 function mapOrder(row: OrderRow): DatabaseOrder {
   const customer = row.customer ?? {};
   const currency = row.currency === "USD" ? "USD" : "IRR";
+
   const status = validStatuses.includes(row.status as DatabaseOrderStatus)
-    ? row.status as DatabaseOrderStatus
+    ? (row.status as DatabaseOrderStatus)
     : "pending";
 
   return {
@@ -57,7 +77,9 @@ function mapOrder(row: OrderRow): DatabaseOrder {
     customerEmail: textValue(customer.email) || null,
     customerPhone: textValue(customer.phone) || null,
     shippingAddress: [customer.city, customer.address, customer.postal]
-      .filter((part): part is string => typeof part === "string" && part.length > 0)
+      .filter(
+        (part): part is string => typeof part === "string" && part.length > 0,
+      )
       .join(" — "),
     status,
     paymentStatus: "not_recorded",
@@ -69,9 +91,11 @@ function mapOrder(row: OrderRow): DatabaseOrder {
     items: (row.order_items ?? []).map((item) => ({
       id: item.id,
       productId: item.product_id,
-      productName: productText(item.product_snapshot?.title, "fa") ||
+      productName:
+        productText(item.product_snapshot?.title, "fa") ||
         productText(item.product_snapshot?.brand, "fa") ||
-        item.product_id || "Product",
+        item.product_id ||
+        "Product",
       unitPrice: Number(item.unit_price ?? 0),
       quantity: Number(item.quantity ?? 0),
       lineTotal: Number(item.line_total ?? 0),
@@ -87,11 +111,13 @@ export function useDatabaseOrders() {
   const fetchOrders = useCallback(async () => {
     const { data, error: queryError } = await supabase
       .from("orders")
-      .select(`
+      .select(
+        `
         id, user_id, code, currency, status, subtotal, shipping, total,
         customer, created_at,
         order_items (id, product_id, product_snapshot, unit_price, quantity, line_total)
-      `)
+      `,
+      )
       .order("created_at", { ascending: false });
 
     if (queryError) {
@@ -107,16 +133,13 @@ export function useDatabaseOrders() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     await fetchOrders();
   }, [fetchOrders]);
 
   useEffect(() => {
-    let cancelled = false;
-    void Promise.resolve().then(() => {
-      if (!cancelled) return fetchOrders();
-      return undefined;
-    });
-    return () => { cancelled = true; };
+    void fetchOrders();
   }, [fetchOrders]);
+
   return { orders, loading, error, refresh };
 }

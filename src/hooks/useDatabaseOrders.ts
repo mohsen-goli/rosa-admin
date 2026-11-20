@@ -110,6 +110,13 @@ export function useDatabaseOrders() {
     await fetchOrders();
   }, [fetchOrders]);
 
-  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchOrders();
+      return undefined;
+    });
+    return () => { cancelled = true; };
+  }, [fetchOrders]);
   return { orders, loading, error, refresh };
 }

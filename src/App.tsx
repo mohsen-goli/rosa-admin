@@ -32,6 +32,14 @@ const Customers = lazy(() =>
   import("./pages/Customers").then((m) => ({ default: m.Customers })),
 );
 
+const Reviews = lazy(() =>
+  import("./pages/Reviews").then((m) => ({ default: m.Reviews })),
+);
+
+const Feedback = lazy(() =>
+  import("./pages/Feedback").then((m) => ({ default: m.Feedback })),
+);
+
 const Settings = lazy(() =>
   import("./pages/Settings").then((m) => ({ default: m.Settings })),
 );
@@ -77,6 +85,8 @@ function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="products" element={<Products />} />
             <Route path="customers" element={<Customers />} />
+            <Route path="reviews" element={<Reviews />} />
+            <Route path="feedback" element={<Feedback />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

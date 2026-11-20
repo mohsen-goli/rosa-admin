@@ -15,6 +15,8 @@ const pageTitleKeys: Record<string, string> = {
   "/orders": "nav.orders",
   "/products": "nav.products",
   "/customers": "nav.customers",
+  "/reviews": "nav.reviews",
+  "/feedback": "nav.feedback",
   "/settings": "nav.settings",
 };
 

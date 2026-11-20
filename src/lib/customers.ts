@@ -1,50 +1,50 @@
-import type { Order } from "../types/order";
+import type { DatabaseOrder } from "../types/databaseOrder";
 
 export interface Customer {
+  id: string;
   email: string;
   name: string;
   totalOrders: number;
-  totalSpent: number;
+  spentByCurrency: Record<"IRR" | "USD", number>;
   lastOrderDate: string;
   status: "vip" | "regular" | "new";
 }
 
-export function extractCustomers(orders: Order[]): Customer[] {
+export function extractCustomers(orders: DatabaseOrder[]): Customer[] {
   const map = new Map<string, Customer>();
-
-  orders.forEach((order) => {
-    const existing = map.get(order.customerEmail);
-
+  for (const order of orders) {
+    const key = order.customerEmail?.trim().toLowerCase() || order.userId || `guest:${order.id}`;
+    const existing = map.get(key);
     if (existing) {
       existing.totalOrders += 1;
-      existing.totalSpent += order.amount;
-
-      if (order.date > existing.lastOrderDate) {
-        existing.lastOrderDate = order.date;
-      }
+      existing.spentByCurrency[order.currency] += order.total;
+      if (order.createdAt > existing.lastOrderDate) existing.lastOrderDate = order.createdAt;
+      if (existing.name === "—" && order.customerName !== "—") existing.name = order.customerName;
     } else {
-      map.set(order.customerEmail, {
-        email: order.customerEmail,
+      map.set(key, {
+        id: key,
+        email: order.customerEmail || "No email",
         name: order.customerName,
         totalOrders: 1,
-        totalSpent: order.amount,
-        lastOrderDate: order.date,
+        spentByCurrency: { IRR: order.currency === "IRR" ? order.total : 0, USD: order.currency === "USD" ? order.total : 0 },
+        lastOrderDate: order.createdAt,
         status: "new",
       });
     }
-  });
+  }
+  return [...map.values()]
+    .map((customer): Customer => {
+      const status: Customer["status"] =
+        customer.totalOrders >= 5
+          ? "vip"
+          : customer.totalOrders >= 2
+            ? "regular"
+            : "new";
 
-  const customers = Array.from(map.values());
-
-  customers.forEach((customer) => {
-    if (customer.totalSpent > 1500000) {
-      customer.status = "vip";
-    } else if (customer.totalOrders >= 3) {
-      customer.status = "regular";
-    } else {
-      customer.status = "new";
-    }
-  });
-
-  return customers.sort((a, b) => b.totalSpent - a.totalSpent);
+      return {
+        ...customer,
+        status,
+      };
+    })
+    .sort((a, b) => b.totalOrders - a.totalOrders);
 }

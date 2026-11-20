@@ -5,7 +5,7 @@ export type DatabaseOrderStatus =
   | "delivered"
   | "cancelled";
 
-export type PaymentStatus = "unpaid" | "paid" | "failed" | "refunded";
+export type PaymentStatus = "not_recorded";
 
 export interface DatabaseOrderItem {
   id: string;
@@ -18,6 +18,7 @@ export interface DatabaseOrderItem {
 
 export interface DatabaseOrder {
   id: string;
+  userId: string | null;
   orderCode: string;
   customerName: string;
   customerEmail: string | null;

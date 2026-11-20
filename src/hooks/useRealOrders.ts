@@ -37,7 +37,7 @@ export function useRealOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const fetchOrders = useCallback(async () => {
     const { data, error: queryError } = await supabase
       .from("orders")
       .select("id, code, currency, total, status, created_at, user_id, customer, order_items(quantity)")
@@ -72,13 +72,18 @@ export function useRealOrders() {
     setLoading(false);
   }, []);
 
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    await fetchOrders();
+  }, [fetchOrders]);
+
   useEffect(() => {
-    void refresh();
+    void fetchOrders();
     const channel = supabase.channel("rosa-admin-dashboard-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void fetchOrders())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [refresh]);
+  }, [fetchOrders]);
 
   return { orders, loading, error, refresh };
 }

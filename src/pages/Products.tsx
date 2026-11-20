@@ -144,7 +144,14 @@ export function Products() {
     await fetchProducts();
   }, [fetchProducts]);
 
-  useEffect(() => { void fetchProducts(); }, [fetchProducts]);
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchProducts();
+      return undefined;
+    });
+    return () => { cancelled = true; };
+  }, [fetchProducts]);
 
   const activeLanguage = (["fa", "en", "ar"].includes(i18n.language.split("-")[0]) ? i18n.language.split("-")[0] : "en") as Lang;
   const filteredProducts = useMemo(() => products.filter((p) => {

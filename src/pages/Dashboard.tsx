@@ -1,5 +1,5 @@
-import { lazy, Suspense, useMemo } from "react";
-import { ShoppingCart, DollarSign, Users, Package } from "lucide-react";
+import { useMemo } from "react";
+import { ShoppingCart, DollarSign, Users, Package, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatCard } from "../components/StatCard";
 import { useDatabaseOrders } from "../hooks/useDatabaseOrders";
@@ -7,7 +7,6 @@ import { StatusDonut } from "../features/charts/StatusDonut";
 import { RevenueArea } from "../features/charts/RevenueArea";
 import { MonthlyBars } from "../features/charts/MonthlyBars";
 
-const HeroScene = lazy(() => import("../features/three/HeroScene").then((module) => ({ default: module.HeroScene })));
 const formatMoney = (value: number, currency: "IRR" | "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: currency === "USD" ? 2 : 0 })
     .format(value / (currency === "USD" ? 100 : 1));
@@ -28,8 +27,25 @@ export function Dashboard() {
   }, [orders]);
 
   return <div className="space-y-6">
-    <Suspense fallback={<div className="h-64 lg:h-80 rounded-xl bg-slate-900 animate-pulse" />}><HeroScene /></Suspense>
-    <div><h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t("dashboard.title")}</h1><p className="text-slate-500 dark:text-slate-400 mt-1">{t("dashboard.subtitle")}</p></div>
+    <section className="relative isolate overflow-hidden rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 px-6 py-7 shadow-sm dark:border-rose-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-rose-950/40 sm:px-8 sm:py-8">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full bg-rose-200/50 blur-3xl dark:bg-rose-500/10" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-1/4 h-48 w-48 rounded-full bg-fuchsia-200/40 blur-3xl dark:bg-fuchsia-500/10" />
+      <div className="relative z-10 max-w-2xl">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-rose-200/80 bg-white/70 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-rose-700 dark:border-rose-800 dark:bg-slate-900/70 dark:text-rose-300">
+          <Sparkles size={14} aria-hidden="true" />
+          ROSA BEAUTY
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 sm:text-3xl">
+          {t("dashboard.title")}
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
+          {t("dashboard.subtitle")}
+        </p>
+      </div>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-5 top-1/2 hidden h-44 w-44 -translate-y-1/2 rounded-full border border-rose-200/70 sm:block dark:border-rose-300/10" />
+      <div aria-hidden="true" className="pointer-events-none absolute right-8 top-1/2 hidden h-28 w-28 -translate-y-1/2 rounded-full border border-rose-300/60 sm:block dark:border-rose-300/15" />
+      <div aria-hidden="true" className="pointer-events-none absolute right-[4.35rem] top-1/2 hidden h-3 w-3 -translate-y-1/2 rounded-full bg-rose-400/70 shadow-[0_0_28px_rgba(244,63,94,0.45)] sm:block" />
+    </section>
     {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</div>}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard title={t("dashboard.stats.totalOrders")} value={loading ? "…" : String(stats.totalOrders)} icon={ShoppingCart} />
